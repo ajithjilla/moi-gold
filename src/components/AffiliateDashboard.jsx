@@ -177,7 +177,6 @@ function EventsTab({ myEvents, moi, onAddEvent, onSelectEvent }) {
         {myEvents.map((e) => {
           const eMoi = moi.filter((m) => m.eventId === e.id);
           const total = eMoi.reduce((s, m) => s + m.amount, 0);
-          const et = EVENT_TYPES.find((t) => t.value === e.type);
           return (
             <div key={e.id} className="card" style={{ cursor: "pointer" }}>
               <div className="flex items-center justify-between mb-3">

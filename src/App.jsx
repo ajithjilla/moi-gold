@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useLanguage } from "./context/useLanguage.js";
+import LanguageToggle from "./components/LanguageToggle.jsx";
 
 const style = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Mukta:wght@300;400;500;600;700&display=swap');
@@ -247,7 +249,26 @@ const style = `
   .login-page {
     min-height: 100vh;
     display: flex;
+    position: relative;
   }
+  .login-lang { position: absolute; top: 16px; right: 16px; z-index: 20; }
+  .lang-toggle {
+    display: inline-flex;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(200,146,42,0.35);
+  }
+  .lang-toggle button {
+    background: rgba(255,255,255,0.08);
+    color: var(--muted);
+    border: none;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Mukta', sans-serif;
+  }
+  .lang-toggle button.active { background: var(--gold); color: var(--deep); }
   .login-left {
     width: 45%;
     padding: 60px 50px;
@@ -438,7 +459,7 @@ const style = `
     overflow: hidden;
   }
   .plan-card.featured { border-color: var(--gold); }
-  .plan-card.featured::before { content: 'POPULAR'; position: absolute; top: 12px; right: -20px; background: var(--gold); color: var(--deep); font-size: 9px; font-weight: 800; padding: 3px 28px; transform: rotate(45deg) translateX(10px); letter-spacing: 1px; }
+  .plan-card.featured::before { content: attr(data-popular); position: absolute; top: 12px; right: -20px; background: var(--gold); color: var(--deep); font-size: 9px; font-weight: 800; padding: 3px 28px; transform: rotate(45deg) translateX(10px); letter-spacing: 1px; }
   .plan-name { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--crimson); margin-bottom: 8px; }
   .plan-price { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 900; color: var(--text); }
   .plan-period { font-size: 12px; color: var(--muted); }
@@ -485,17 +506,90 @@ const style = `
     .login-left { display: none; }
     .form-grid { grid-template-columns: 1fr; }
   }
+
+  /* ===== DARK MODE ===== */
+  html[data-theme="dark"] {
+    --cream: #110800;
+    --cream2: #1c0f05;
+    --card-bg: rgba(22,14,5,0.97);
+    --text: #EDD9A3;
+    --muted: #B08040;
+    --shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  html[data-theme="dark"] body { background: #110800; }
+  html[data-theme="dark"] input,
+  html[data-theme="dark"] select,
+  html[data-theme="dark"] textarea { background: #1c0f05; color: #EDD9A3; border-color: rgba(200,146,42,0.3); }
+  html[data-theme="dark"] .login-card { background: #1a0f05; }
+  html[data-theme="dark"] .login-card-title { color: var(--gold); }
+  html[data-theme="dark"] .plan-card { background: #1c0f05; }
+  html[data-theme="dark"] .mobile-view { border-color: var(--gold-dark); }
+  html[data-theme="dark"] .modal { background: #1c0f05; }
+  html[data-theme="dark"] .section-strip { background: linear-gradient(90deg, #1c0f05, transparent); }
+
+  /* THEME TOGGLE */
+  .btn-theme {
+    background: transparent;
+    border: 1px solid var(--gold-dark);
+    color: var(--gold-light);
+    padding: 5px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .btn-theme:hover { background: rgba(200,146,42,0.15); }
+
+  /* VOIDED ROWS */
+  tr.moi-voided td { text-decoration: line-through; opacity: 0.4; }
+
+  /* DENOMINATION */
+  .denom-section { margin-top: 10px; padding: 14px; background: rgba(200,146,42,0.06); border-radius: 12px; border: 1px solid rgba(200,146,42,0.15); }
+  .denom-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .denom-row { display: flex; align-items: center; gap: 6px; background: var(--card-bg); border-radius: 8px; padding: 6px 10px; border: 1px solid rgba(200,146,42,0.12); }
+  .denom-label { font-size: 12px; font-weight: 700; color: var(--gold-dark); min-width: 38px; }
+  .denom-qty { width: 50px !important; padding: 4px 6px !important; text-align: center; font-size: 13px !important; min-width: 0 !important; }
+  .denom-sub { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .denom-total-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding: 8px 12px; background: rgba(200,146,42,0.12); border-radius: 8px; font-size: 13px; font-weight: 700; color: var(--gold-dark); }
+
+  /* SETTLEMENT */
+  .settlement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  .settlement-card { border-radius: var(--radius); padding: 28px 24px; text-align: center; }
+  .settle-cash { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); border: 2px solid #43A047; }
+  .settle-bank { background: linear-gradient(135deg, #E3F2FD, #BBDEFB); border: 2px solid #1E88E5; }
+  html[data-theme="dark"] .settle-cash { background: linear-gradient(135deg, #0a1f0d, #112416); border-color: #43A047; }
+  html[data-theme="dark"] .settle-bank { background: linear-gradient(135deg, #0a1526, #0e1e36); border-color: #1E88E5; }
+  .settle-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .settle-cash .settle-label { color: #2E7D32; }
+  .settle-bank .settle-label { color: #1565C0; }
+  html[data-theme="dark"] .settle-cash .settle-label { color: #66BB6A; }
+  html[data-theme="dark"] .settle-bank .settle-label { color: #42A5F5; }
+  .settle-amount { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 900; }
+  .settle-cash .settle-amount { color: #2E7D32; }
+  .settle-bank .settle-amount { color: #1565C0; }
+  html[data-theme="dark"] .settle-cash .settle-amount { color: #66BB6A; }
+  html[data-theme="dark"] .settle-bank .settle-amount { color: #42A5F5; }
+  .settle-sub { font-size: 12px; margin-top: 6px; opacity: 0.65; }
+  .settle-total-card { background: linear-gradient(135deg, var(--crimson), #6B0000); color: white; border-radius: var(--radius); padding: 24px; text-align: center; margin-bottom: 24px; }
+  .settle-total-card .settle-amount { color: var(--gold-light); }
+  .method-breakdown-table td { padding: 10px 14px; }
 `;
 
 // ============ DATA ============
-const EVENT_TYPES = [
-  { value: "wedding", label: "திருமணம் (Wedding)", emoji: "💍", badge: "badge-wedding" },
-  { value: "engagement", label: "நிச்சயதார்த்தம் (Engagement)", emoji: "💑", badge: "badge-engagement" },
-  { value: "ear", label: "காது குத்து (Ear Piercing)", emoji: "💎", badge: "badge-ear" },
-  { value: "cradle", label: "தொட்டில் விழா (Cradle Ceremony)", emoji: "🍼", badge: "badge-cradle" },
-  { value: "housewarming", label: "கிரகப்பிரவேசம் (Housewarming)", emoji: "🏠", badge: "badge-house" },
-  { value: "birthday", label: "பிறந்தநாள் (Birthday)", emoji: "🎂", badge: "badge-birthday" },
+const EVENT_TYPE_META = [
+  { value: "wedding", emoji: "💍", badge: "badge-wedding" },
+  { value: "engagement", emoji: "💑", badge: "badge-engagement" },
+  { value: "ear", emoji: "💎", badge: "badge-ear" },
+  { value: "cradle", emoji: "🍼", badge: "badge-cradle" },
+  { value: "housewarming", emoji: "🏠", badge: "badge-house" },
+  { value: "birthday", emoji: "🎂", badge: "badge-birthday" },
 ];
+
+// ============ DENOMINATION ============
+const DENOMS = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+const emptyDenoms = () => Object.fromEntries(DENOMS.map((d) => [d, 0]));
+const denomSum = (denoms) => DENOMS.reduce((s, d) => s + d * (denoms?.[d] || 0), 0);
 
 const initialEvents = [
   { id: 1, name: "Murugan & Kavitha Wedding", type: "wedding", date: "2025-02-10", venue: "Madurai Palace", owner: "Murugan S", ownerPhone: "9876543210", ownerEmail: "murugan@gmail.com", affiliateId: 1, status: "completed" },
@@ -504,11 +598,11 @@ const initialEvents = [
 ];
 
 const initialMoi = [
-  { id: 1, eventId: 1, name: "Anbu Selvan", amount: 2000, phone: "9876501234", address: "12, Anna Nagar, Chennai", relation: "Uncle", method: "Cash", note: "Blessings" },
-  { id: 2, eventId: 1, name: "Muthu Lakshmi", amount: 5000, phone: "9865430012", address: "5, Gandhi St, Madurai", relation: "Friend", method: "GPay", note: "" },
-  { id: 3, eventId: 1, name: "Subramanian K", amount: 1500, phone: "9812345678", address: "78, Nehru Road, Trichy", relation: "Colleague", method: "Cash", note: "With love" },
-  { id: 4, eventId: 2, name: "Viji Ramasamy", amount: 3000, phone: "9800123456", address: "3, Temple St, Thanjavur", relation: "Aunt", method: "Cash", note: "" },
-  { id: 5, eventId: 2, name: "Durai Murugan", amount: 500, phone: "9755432100", address: "22, Main Road, Salem", relation: "Neighbor", method: "PhonePe", note: "" },
+  { id: 1, eventId: 1, name: "Anbu Selvan", amount: 2000, phone: "9876501234", address: "12, Anna Nagar, Chennai", relation: "Uncle", method: "Cash", note: "Blessings", voided: false, denoms: { 500: 4, 200: 0, 100: 0, 50: 0, 20: 0, 10: 0, 5: 0, 2: 0, 1: 0 } },
+  { id: 2, eventId: 1, name: "Muthu Lakshmi", amount: 5000, phone: "9865430012", address: "5, Gandhi St, Madurai", relation: "Friend", method: "GPay", note: "", voided: false, denoms: emptyDenoms() },
+  { id: 3, eventId: 1, name: "Subramanian K", amount: 1500, phone: "9812345678", address: "78, Nehru Road, Trichy", relation: "Colleague", method: "Cash", note: "With love", voided: false, denoms: { 500: 3, 200: 0, 100: 0, 50: 0, 20: 0, 10: 0, 5: 0, 2: 0, 1: 0 } },
+  { id: 4, eventId: 2, name: "Viji Ramasamy", amount: 3000, phone: "9800123456", address: "3, Temple St, Thanjavur", relation: "Aunt", method: "Cash", note: "", voided: false, denoms: { 500: 6, 200: 0, 100: 0, 50: 0, 20: 0, 10: 0, 5: 0, 2: 0, 1: 0 } },
+  { id: 5, eventId: 2, name: "Durai Murugan", amount: 500, phone: "9755432100", address: "22, Main Road, Salem", relation: "Neighbor", method: "PhonePe", note: "", voided: false, denoms: emptyDenoms() },
 ];
 
 const initialAffiliates = [
@@ -519,19 +613,114 @@ const initialAffiliates = [
 
 // ============ HELPERS ============
 const fmt = (n) => "₹" + Number(n).toLocaleString("en-IN");
-const eventBadge = (type) => {
-  const t = EVENT_TYPES.find((e) => e.value === type);
-  return t ? <span className={`badge ${t.badge}`}>{t.emoji} {t.value.charAt(0).toUpperCase() + t.value.slice(1)}</span> : null;
+const eventBadge = (type, t) => {
+  const meta = EVENT_TYPE_META.find((e) => e.value === type);
+  if (!meta) return null;
+  const label = t(`eventTypes.${type}`);
+  return (
+    <span className={`badge ${meta.badge}`}>
+      {meta.emoji} {label}
+    </span>
+  );
+};
+
+// ============ RECEIPT PRINT ============
+const printReceiptFn = (entry, event) => {
+  const denomLines = entry.denoms
+    ? DENOMS.filter((d) => entry.denoms[d] > 0)
+        .map((d) => `<tr><td style="padding:3px 8px">₹${d} × ${entry.denoms[d]}</td><td style="padding:3px 8px;text-align:right;font-weight:700">₹${(Number(d) * Number(entry.denoms[d])).toLocaleString("en-IN")}</td></tr>`)
+        .join("")
+    : "";
+  const w = window.open("", "_blank", "width=440,height=700");
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Moi Receipt</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:24px;color:#2C1810;background:#fff}
+.hdr{text-align:center;border-bottom:2px dashed #C8922A;padding-bottom:14px;margin-bottom:16px}
+.logo{font-size:26px;font-weight:900;color:#8B1A1A}
+.sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#7A5C3A;margin-top:2px}
+.rcpt-no{font-size:10px;color:#7A5C3A;margin-top:6px}
+.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0e0c0;font-size:13px}
+.lbl{color:#7A5C3A;font-weight:600}.val{font-weight:700}
+.amt{text-align:center;background:linear-gradient(135deg,#C8922A,#8B6010);color:#fff;border-radius:10px;padding:14px;margin:14px 0}
+.amt-big{font-size:32px;font-weight:900}.amt-method{font-size:11px;opacity:.8;margin-top:2px}
+.denom-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+.ftr{text-align:center;margin-top:18px;padding-top:12px;border-top:2px dashed #C8922A;font-size:11px;color:#7A5C3A}
+@media print{body{padding:6px}}</style></head><body>
+<div class="hdr"><div class="logo">மொய் Tech</div><div class="sub">Moi Management System</div>
+<div class="rcpt-no">Receipt #${String(entry.id).slice(-8).toUpperCase()} &nbsp;|&nbsp; ${new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</div></div>
+<div style="margin-bottom:12px">
+<div class="row"><span class="lbl">Event</span><span class="val">${event?.name||""}</span></div>
+<div class="row"><span class="lbl">Date</span><span class="val">${event?.date||""}</span></div>
+<div class="row"><span class="lbl">Venue</span><span class="val">${event?.venue||""}</span></div></div>
+<div class="amt"><div class="amt-big">₹${Number(entry.amount).toLocaleString("en-IN")}</div><div class="amt-method">${entry.method}</div></div>
+<div style="margin-bottom:12px">
+<div class="row"><span class="lbl">From</span><span class="val">${entry.name}</span></div>
+<div class="row"><span class="lbl">Phone</span><span class="val">${entry.phone}</span></div>
+<div class="row"><span class="lbl">Relation</span><span class="val">${entry.relation}</span></div>
+${entry.address?`<div class="row"><span class="lbl">Address</span><span class="val">${entry.address}</span></div>`:""}
+${entry.note?`<div class="row"><span class="lbl">Note</span><span class="val">${entry.note}</span></div>`:""}</div>
+${denomLines?`<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:#7A5C3A;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Cash Denomination</div>
+<table class="denom-tbl">${denomLines}</table></div>`:""}
+<div class="ftr"><div>வாழ்த்துக்கள்! · Congratulations!</div><div style="margin-top:4px">Powered by Moi Tech</div></div>
+</body></html>`);
+  w.document.close();
+  setTimeout(() => { w.print(); }, 500);
+};
+
+// ============ PDF REPORT ============
+const generateEventPDF = (eventData, moiData) => {
+  const active = moiData.filter((m) => !m.voided);
+  const total = active.reduce((s, m) => s + m.amount, 0);
+  const now = new Date().toLocaleString("en-IN");
+  const rows = active.map((m, i) =>
+    `<tr><td>${i+1}</td><td>${m.name}</td><td style="font-weight:700">₹${Number(m.amount).toLocaleString("en-IN")}</td><td>${m.phone}</td><td>${m.relation}</td><td>${m.method}</td><td>${m.note||""}</td></tr>`
+  ).join("");
+  const w = window.open("", "_blank", "width=900,height=700");
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Event Report</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:28px;color:#2C1810}
+h1{font-size:22px;color:#8B1A1A;margin-bottom:4px}
+.meta{font-size:12px;color:#7A5C3A;margin-bottom:20px;line-height:1.8}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}
+thead tr{background:#8B1A1A;color:#F0C060}
+thead th{padding:10px 12px;text-align:left;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+tbody tr:nth-child(even){background:#fdf6e3}tbody tr:hover{background:#f5e6c8}
+tbody td{padding:9px 12px;border-bottom:1px solid #f0e0c0}
+.summary{background:linear-gradient(135deg,#C8922A,#8B6010);color:#fff;border-radius:10px;padding:18px 24px;display:flex;gap:40px}
+.s-item{text-align:center}.s-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:.8}
+.s-value{font-size:24px;font-weight:900;margin-top:4px}
+.ftr{margin-top:20px;font-size:10px;color:#7A5C3A;text-align:center;border-top:1px dashed #C8922A;padding-top:12px}
+@media print{.no-print{display:none}}</style></head><body>
+<h1>Moi Tech – Event Report</h1>
+<div class="meta">
+  <strong>${eventData.name}</strong><br>
+  Date: ${eventData.date} &nbsp;|&nbsp; Venue: ${eventData.venue}<br>
+  Owner: ${eventData.owner} &nbsp;|&nbsp; Phone: ${eventData.ownerPhone}<br>
+  Generated: ${now}
+</div>
+<table><thead><tr><th>#</th><th>Name</th><th>Amount</th><th>Phone</th><th>Relation</th><th>Method</th><th>Note</th></tr></thead>
+<tbody>${rows}</tbody></table>
+<div class="summary">
+  <div class="s-item"><div class="s-label">Total Moi</div><div class="s-value">₹${total.toLocaleString("en-IN")}</div></div>
+  <div class="s-item"><div class="s-label">Total Entries</div><div class="s-value">${active.length}</div></div>
+  <div class="s-item"><div class="s-label">Avg. per Entry</div><div class="s-value">₹${active.length?Math.round(total/active.length).toLocaleString("en-IN"):"0"}</div></div>
+</div>
+<div class="ftr">Voided entries excluded · Powered by Moi Tech</div>
+<div class="no-print" style="text-align:center;margin-top:20px">
+  <button onclick="window.print()" style="background:#8B1A1A;color:#F0C060;border:none;padding:10px 28px;font-size:14px;border-radius:8px;cursor:pointer">🖨️ Print / Save as PDF</button>
+</div></body></html>`);
+  w.document.close();
 };
 
 // ============ TOAST ============
 function Toast({ msg, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, []);
+  useEffect(() => { const timer = setTimeout(onClose, 3000); return () => clearTimeout(timer); }, [onClose]);
   return <div className="toast">✅ {msg}</div>;
 }
 
 // ============ LOGIN PAGE ============
 function LoginPage({ onLogin }) {
+  const { t } = useLanguage();
   const [role, setRole] = useState("affiliate");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -554,23 +743,25 @@ function LoginPage({ onLogin }) {
 
   const demos = { admin: roleMap.admin, affiliate: roleMap.affiliate, owner: roleMap.owner };
 
+  const loginFeaturesRaw = t("loginFeatures");
+  const featureList = Array.isArray(loginFeaturesRaw) ? loginFeaturesRaw : [];
+  const featureIcons = ["💍", "📊", "🖨️", "🌐"];
+
   return (
     <div className="login-page pattern-bg">
+      <div className="login-lang">
+        <LanguageToggle />
+      </div>
       <div className="login-left">
         <div className="login-brand">
           <div className="login-logo-big">M</div>
           <div className="login-app-name">மொய்<br />Moi Tech</div>
-          <div className="login-tagline">Digital Gift Tracking for Tamil Nadu Functions</div>
+          <div className="login-tagline">{t("login.tagline")}</div>
         </div>
         <div className="login-features">
-          {[
-            { icon: "💍", title: "All Functions Covered", sub: "Wedding, Engagement, Ear Piercing, Cradle & more" },
-            { icon: "📊", title: "Real-time Tracking", sub: "Event owners view gifts live on mobile" },
-            { icon: "🖨️", title: "Print & Export", sub: "PDF reports for families at end of function" },
-            { icon: "🌐", title: "Tamil + English", sub: "Bilingual interface for ease of use" },
-          ].map((f, i) => (
+          {featureList.map((f, i) => (
             <div className="login-feature" key={i}>
-              <div className="feature-icon">{f.icon}</div>
+              <div className="feature-icon">{featureIcons[i] ?? "✨"}</div>
               <div>
                 <div className="feature-text-title">{f.title}</div>
                 <div className="feature-text-sub">{f.sub}</div>
@@ -582,34 +773,38 @@ function LoginPage({ onLogin }) {
 
       <div className="login-right" style={{ background: "rgba(26,10,0,0.2)", backdropFilter: "blur(10px)" }}>
         <div className="login-card">
-          <div className="login-card-title">Welcome Back</div>
-          <div className="login-card-sub">Sign in to your Moi Tech account</div>
+          <div className="login-card-title">{t("login.welcomeBack")}</div>
+          <div className="login-card-sub">{t("login.signInSub")}</div>
 
           <div className="role-tabs">
-            {[["admin", "🛡️ Admin"], ["affiliate", "💼 Affiliate"], ["owner", "📱 Event Owner"]].map(([r, label]) => (
+            {[
+              ["admin", t("login.roleAdmin")],
+              ["affiliate", t("login.roleAffiliate")],
+              ["owner", t("login.roleOwner")],
+            ].map(([r, label]) => (
               <button key={r} className={`role-tab ${role === r ? "active" : ""}`} onClick={() => { setRole(r); setEmail(demos[r].email); setPass(demos[r].pass); }}>{label}</button>
             ))}
           </div>
 
           <div style={{ marginBottom: 24, background: "rgba(200,146,42,0.1)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "var(--gold-dark)" }}>
-            🔑 Demo: <strong>{demos[role].email}</strong> / <strong>{demos[role].pass}</strong>
+            🔑 {t("login.demo")} <strong>{demos[role].email}</strong> / <strong>{demos[role].pass}</strong>
           </div>
 
           <div className="form-group mb-3">
-            <label>Email Address</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter email" />
+            <label>{t("login.email")}</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("login.emailPh")} />
           </div>
           <div className="form-group mb-4">
-            <label>Password</label>
-            <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Enter password" />
+            <label>{t("login.password")}</label>
+            <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder={t("login.passwordPh")} />
           </div>
 
           <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", padding: "12px" }} onClick={handleLogin}>
-            Sign In →
+            {t("login.signIn")}
           </button>
 
           <div style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "var(--muted)" }}>
-            Need an account? Contact <strong style={{ color: "var(--gold-dark)" }}>admin@moitech.in</strong>
+            {t("login.needAccount")} <strong style={{ color: "var(--gold-dark)" }}>admin@moitech.in</strong>
           </div>
         </div>
       </div>
@@ -618,21 +813,26 @@ function LoginPage({ onLogin }) {
 }
 
 // ============ NAVBAR ============
-function Navbar({ role, userName, onLogout }) {
-  const roleLabel = { admin: "Super Admin", affiliate: "Affiliate", owner: "Event Owner" }[role];
+function Navbar({ role, userName, onLogout, theme, toggleTheme }) {
+  const { t } = useLanguage();
+  const roleLabel = { admin: t("nav.superAdmin"), affiliate: t("nav.affiliate"), owner: t("nav.eventOwner") }[role];
   return (
     <div className="navbar">
       <div className="navbar-brand">
         <div className="navbar-logo">M</div>
         <div>
-          <div className="navbar-title">Moi Tech</div>
-          <div className="navbar-subtitle">மொய் Management System</div>
+          <div className="navbar-title">{t("nav.brandTitle")}</div>
+          <div className="navbar-subtitle">{t("nav.brandSubtitle")}</div>
         </div>
       </div>
       <div className="navbar-user">
+        <button className="btn-theme" onClick={toggleTheme} title={t("theme.toggle")}>
+          {theme === "dark" ? "☀️" : "🌙"}
+        </button>
+        <LanguageToggle />
         <span className="navbar-badge">{roleLabel}</span>
         <span style={{ color: "var(--cream)", fontSize: 14 }}>{userName}</span>
-        <button className="btn-logout" onClick={onLogout}>Logout</button>
+        <button className="btn-logout" onClick={onLogout}>{t("nav.logout")}</button>
       </div>
     </div>
   );
@@ -640,6 +840,7 @@ function Navbar({ role, userName, onLogout }) {
 
 // ============ ADMIN DASHBOARD ============
 function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
+  const { t } = useLanguage();
   const [page, setPage] = useState("overview");
   const [toast, setToast] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -649,25 +850,25 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
   const totalMoiCollected = moi.reduce((s, m) => s + m.amount, 0);
 
   const addAffiliate = () => {
-    setAffiliates([...affiliates, { ...newAff, id: Date.now(), status: "pending", joinDate: new Date().toISOString().split("T")[0], eventsCount: 0, revenue: 0 }]);
+    setAffiliates([...affiliates, { ...newAff, id: crypto.randomUUID(), status: "pending", joinDate: new Date().toISOString().split("T")[0], eventsCount: 0, revenue: 0 }]);
     setShowModal(false);
-    setToast("Affiliate added successfully!");
+    setToast(t("admin.toastAffiliateAdded"));
     setNewAff({ name: "", email: "", phone: "", plan: "basic" });
   };
 
   const menuItems = [
-    { id: "overview", icon: "📊", label: "Overview" },
-    { id: "affiliates", icon: "👥", label: "Affiliates" },
-    { id: "events", icon: "🎉", label: "All Events" },
-    { id: "revenue", icon: "💰", label: "Revenue" },
-    { id: "plans", icon: "📋", label: "Plans" },
-    { id: "settings", icon: "⚙️", label: "Settings" },
+    { id: "overview", icon: "📊", label: t("admin.menuOverview") },
+    { id: "affiliates", icon: "👥", label: t("admin.menuAffiliates") },
+    { id: "events", icon: "🎉", label: t("admin.menuEvents") },
+    { id: "revenue", icon: "💰", label: t("admin.menuRevenue") },
+    { id: "plans", icon: "📋", label: t("admin.menuPlans") },
+    { id: "settings", icon: "⚙️", label: t("admin.menuSettings") },
   ];
 
   return (
     <div className="layout">
       <div className="sidebar">
-        <div className="sidebar-label" style={{ padding: "0 24px", marginBottom: 12 }}>Navigation</div>
+        <div className="sidebar-label" style={{ padding: "0 24px", marginBottom: 12 }}>{t("admin.navLabel")}</div>
         {menuItems.map((m) => (
           <div key={m.id} className={`sidebar-item ${page === m.id ? "active" : ""}`} onClick={() => setPage(m.id)}>
             <span className="sidebar-icon">{m.icon}</span> {m.label}
@@ -679,15 +880,15 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
         {page === "overview" && (
           <>
             <div className="page-header">
-              <div><div className="page-title">📊 Dashboard Overview</div><div className="page-sub">Welcome back! Here's what's happening today.</div></div>
+              <div><div className="page-title">{t("admin.dashTitle")}</div><div className="page-sub">{t("admin.dashSub")}</div></div>
             </div>
 
             <div className="stats-grid">
               {[
-                { icon: "👥", value: affiliates.length, label: "Total Affiliates" },
-                { icon: "🎉", value: events.length, label: "Total Events" },
-                { icon: "🎁", value: moi.length, label: "Moi Entries" },
-                { icon: "💰", value: fmt(totalRevenue), label: "Total Revenue" },
+                { icon: "👥", value: affiliates.length, label: t("admin.statAffiliates") },
+                { icon: "🎉", value: events.length, label: t("admin.statEvents") },
+                { icon: "🎁", value: moi.length, label: t("admin.statMoiEntries") },
+                { icon: "💰", value: fmt(totalRevenue), label: t("admin.statRevenue") },
               ].map((s, i) => (
                 <div className="stat-card" key={i}>
                   <div className="stat-icon">{s.icon}</div>
@@ -699,12 +900,12 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
 
             <div className="grid-2">
               <div className="card">
-                <div className="card-title">🌟 Top Affiliates</div>
+                <div className="card-title">{t("admin.topAffiliates")}</div>
                 {affiliates.sort((a, b) => b.revenue - a.revenue).slice(0, 3).map((a) => (
                   <div key={a.id} className="flex items-center justify-between mb-3" style={{ padding: "10px 0", borderBottom: "1px solid rgba(200,146,42,0.1)" }}>
                     <div>
                       <div className="font-bold" style={{ fontSize: 14 }}>{a.name}</div>
-                      <div className="text-xs text-muted">{a.eventsCount} events · {a.plan.toUpperCase()} plan</div>
+                      <div className="text-xs text-muted">{a.eventsCount} {t("admin.eventsSuffix")} · {a.plan.toUpperCase()} {t("admin.planWord")}</div>
                     </div>
                     <div className="amount-tag">{fmt(a.revenue)}</div>
                   </div>
@@ -712,26 +913,26 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
               </div>
 
               <div className="card">
-                <div className="card-title">🎉 Recent Events</div>
+                <div className="card-title">{t("admin.recentEvents")}</div>
                 {events.slice(0, 3).map((e) => (
                   <div key={e.id} className="flex items-center justify-between mb-3" style={{ padding: "10px 0", borderBottom: "1px solid rgba(200,146,42,0.1)" }}>
                     <div>
                       <div className="font-bold" style={{ fontSize: 14 }}>{e.name}</div>
                       <div className="text-xs text-muted">{e.date} · {e.venue}</div>
                     </div>
-                    {eventBadge(e.type)}
+                    {eventBadge(e.type, t)}
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="card mt-4">
-              <div className="card-title">💳 Gift Collections Summary</div>
+              <div className="card-title">{t("admin.giftSummary")}</div>
               <div className="stats-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
                 {[
-                  { label: "Total Moi Collected", value: fmt(totalMoiCollected) },
-                  { label: "Avg. per Event", value: fmt(Math.round(totalMoiCollected / Math.max(events.length, 1))) },
-                  { label: "Avg. per Entry", value: fmt(Math.round(totalMoiCollected / Math.max(moi.length, 1))) },
+                  { label: t("admin.totalMoiCollected"), value: fmt(totalMoiCollected) },
+                  { label: t("admin.avgPerEvent"), value: fmt(Math.round(totalMoiCollected / Math.max(events.length, 1))) },
+                  { label: t("admin.avgPerEntry"), value: fmt(Math.round(totalMoiCollected / Math.max(moi.length, 1))) },
                 ].map((s, i) => (
                   <div key={i} style={{ textAlign: "center", padding: "16px", borderRight: i < 2 ? "1px solid rgba(200,146,42,0.15)" : "none" }}>
                     <div style={{ fontFamily: "Playfair Display, serif", fontSize: 24, fontWeight: 700, color: "var(--crimson)" }}>{s.value}</div>
@@ -746,14 +947,14 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
         {page === "affiliates" && (
           <>
             <div className="page-header">
-              <div><div className="page-title">👥 Affiliates</div><div className="page-sub">Manage your registered affiliates</div></div>
-              <button className="btn btn-primary" onClick={() => setShowModal(true)}>+ Add Affiliate</button>
+              <div><div className="page-title">{t("admin.affiliatesTitle")}</div><div className="page-sub">{t("admin.affiliatesSub")}</div></div>
+              <button className="btn btn-primary" onClick={() => setShowModal(true)}>{t("admin.addAffiliate")}</button>
             </div>
             <div className="card">
               <div className="table-wrap">
                 <table>
                   <thead><tr>
-                    <th>Name</th><th>Email</th><th>Phone</th><th>Plan</th><th>Status</th><th>Events</th><th>Revenue</th><th>Joined</th>
+                    <th>{t("admin.thName")}</th><th>{t("admin.thEmail")}</th><th>{t("admin.thPhone")}</th><th>{t("admin.thPlan")}</th><th>{t("admin.thStatus")}</th><th>{t("admin.thEvents")}</th><th>{t("admin.thRevenue")}</th><th>{t("admin.thJoined")}</th>
                   </tr></thead>
                   <tbody>
                     {affiliates.map((a) => (
@@ -762,7 +963,7 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
                         <td style={{ color: "var(--muted)" }}>{a.email}</td>
                         <td>{a.phone}</td>
                         <td><span className="badge badge-active">{a.plan.toUpperCase()}</span></td>
-                        <td><span className={`badge badge-${a.status === "active" ? "active" : a.status === "pending" ? "pending" : "expired"}`}>{a.status}</span></td>
+                        <td><span className={`badge badge-${a.status === "active" ? "active" : a.status === "pending" ? "pending" : "expired"}`}>{t(`status.${a.status}`)}</span></td>
                         <td>{a.eventsCount}</td>
                         <td className="amount-positive">{fmt(a.revenue)}</td>
                         <td style={{ color: "var(--muted)", fontSize: 12 }}>{a.joinDate}</td>
@@ -778,25 +979,25 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
         {page === "events" && (
           <>
             <div className="page-header">
-              <div><div className="page-title">🎉 All Events</div><div className="page-sub">Events across all affiliates</div></div>
+              <div><div className="page-title">{t("admin.allEventsTitle")}</div><div className="page-sub">{t("admin.allEventsSub")}</div></div>
             </div>
             <div className="card">
               <div className="table-wrap">
                 <table>
-                  <thead><tr><th>Event Name</th><th>Type</th><th>Date</th><th>Venue</th><th>Owner</th><th>Moi Count</th><th>Total Moi</th><th>Status</th></tr></thead>
+                  <thead><tr><th>{t("admin.thEventName")}</th><th>{t("admin.thType")}</th><th>{t("admin.thDate")}</th><th>{t("admin.thVenue")}</th><th>{t("admin.thOwner")}</th><th>{t("admin.thMoiCount")}</th><th>{t("admin.thTotalMoi")}</th><th>{t("admin.thStatus")}</th></tr></thead>
                   <tbody>
                     {events.map((e) => {
                       const eMoi = moi.filter((m) => m.eventId === e.id);
                       return (
                         <tr key={e.id}>
                           <td><strong>{e.name}</strong></td>
-                          <td>{eventBadge(e.type)}</td>
+                          <td>{eventBadge(e.type, t)}</td>
                           <td style={{ fontSize: 12, color: "var(--muted)" }}>{e.date}</td>
                           <td style={{ fontSize: 12 }}>{e.venue}</td>
                           <td>{e.owner}</td>
                           <td>{eMoi.length}</td>
                           <td className="amount-positive">{fmt(eMoi.reduce((s, m) => s + m.amount, 0))}</td>
-                          <td><span className={`badge badge-${e.status === "completed" ? "active" : e.status === "active" ? "pending" : "expired"}`}>{e.status}</span></td>
+                          <td><span className={`badge badge-${e.status === "completed" ? "active" : e.status === "active" ? "pending" : "expired"}`}>{t(`status.${e.status}`)}</span></td>
                         </tr>
                       );
                     })}
@@ -810,20 +1011,20 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
         {page === "revenue" && (
           <>
             <div className="page-header">
-              <div><div className="page-title">💰 Revenue</div><div className="page-sub">Your subscription earnings</div></div>
+              <div><div className="page-title">{t("admin.revenueTitle")}</div><div className="page-sub">{t("admin.revenueSub")}</div></div>
             </div>
             <div className="stats-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
               {[
-                { icon: "💰", value: fmt(totalRevenue), label: "Total Revenue" },
-                { icon: "📅", value: fmt(1800), label: "This Month" },
-                { icon: "📈", value: affiliates.filter((a) => a.status === "active").length, label: "Active Subscribers" },
+                { icon: "💰", value: fmt(totalRevenue), label: t("admin.statRevenue") },
+                { icon: "📅", value: fmt(1800), label: t("admin.thisMonth") },
+                { icon: "📈", value: affiliates.filter((a) => a.status === "active").length, label: t("admin.activeSubscribers") },
               ].map((s, i) => <div className="stat-card" key={i}><div className="stat-icon">{s.icon}</div><div className="stat-value">{s.value}</div><div className="stat-label">{s.label}</div></div>)}
             </div>
             <div className="card mt-4">
-              <div className="card-title">💳 Revenue by Affiliate</div>
+              <div className="card-title">{t("admin.revByAffiliate")}</div>
               <div className="table-wrap">
                 <table>
-                  <thead><tr><th>Affiliate</th><th>Plan</th><th>Events</th><th>Revenue</th><th>Status</th></tr></thead>
+                  <thead><tr><th>{t("admin.menuAffiliates")}</th><th>{t("admin.thPlan")}</th><th>{t("admin.thEvents")}</th><th>{t("admin.thRevenue")}</th><th>{t("admin.thStatus")}</th></tr></thead>
                   <tbody>
                     {affiliates.map((a) => (
                       <tr key={a.id}>
@@ -831,7 +1032,7 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
                         <td><span className="badge badge-active">{a.plan.toUpperCase()}</span></td>
                         <td>{a.eventsCount}</td>
                         <td className="amount-positive">{fmt(a.revenue)}</td>
-                        <td><span className={`badge badge-${a.status === "active" ? "active" : "pending"}`}>{a.status}</span></td>
+                        <td><span className={`badge badge-${a.status === "active" ? "active" : "pending"}`}>{t(`status.${a.status}`)}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -844,22 +1045,22 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
         {page === "plans" && (
           <>
             <div className="page-header">
-              <div><div className="page-title">📋 Subscription Plans</div><div className="page-sub">Manage your pricing plans</div></div>
+              <div><div className="page-title">{t("admin.plansTitle")}</div><div className="page-sub">{t("admin.plansSub")}</div></div>
             </div>
             <div className="plans-grid">
               {[
-                { name: "Basic", price: "₹299", period: "/month", features: ["Up to 5 events/month", "50 Moi entries/event", "PDF Export", "Email support"], featured: false },
-                { name: "Pro", price: "₹599", period: "/month", features: ["Unlimited events", "Unlimited Moi entries", "PDF + Excel Export", "WhatsApp notifications", "Priority support", "Tamil language UI"], featured: true },
-                { name: "Enterprise", price: "₹1299", period: "/month", features: ["Everything in Pro", "Multiple operators", "Custom branding", "Dedicated support", "API access", "Analytics dashboard"], featured: false },
+                { name: t("admin.planBasic"), price: "₹299", features: t("plans.basic.features"), featured: false },
+                { name: t("admin.planPro"), price: "₹599", features: t("plans.pro.features"), featured: true },
+                { name: t("admin.planEnterprise"), price: "₹1299", features: t("plans.enterprise.features"), featured: false },
               ].map((p, i) => (
-                <div key={i} className={`plan-card ${p.featured ? "featured" : ""}`}>
+                <div key={i} className={`plan-card ${p.featured ? "featured" : ""}`} data-popular={p.featured ? t("admin.popular") : undefined}>
                   <div className="plan-name">{p.name}</div>
-                  <div><span className="plan-price">{p.price}</span> <span className="plan-period">{p.period}</span></div>
+                  <div><span className="plan-price">{p.price}</span> <span className="plan-period">{t("admin.perMonth")}</span></div>
                   <div className="divider" />
                   <div className="plan-features">
-                    {p.features.map((f, j) => <div key={j} className="plan-feature"><span>✅</span><span>{f}</span></div>)}
+                    {(Array.isArray(p.features) ? p.features : []).map((f, j) => <div key={j} className="plan-feature"><span>✅</span><span>{f}</span></div>)}
                   </div>
-                  <button className={`btn ${p.featured ? "btn-primary" : "btn-outline"} mt-4`} style={{ width: "100%", justifyContent: "center" }}>Select Plan</button>
+                  <button className={`btn ${p.featured ? "btn-primary" : "btn-outline"} mt-4`} style={{ width: "100%", justifyContent: "center" }}>{t("admin.selectPlan")}</button>
                 </div>
               ))}
             </div>
@@ -868,15 +1069,15 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
 
         {page === "settings" && (
           <div className="card">
-            <div className="card-title">⚙️ System Settings</div>
+            <div className="card-title">{t("admin.settingsTitle")}</div>
             <div className="form-grid">
-              <div className="form-group"><label>App Name</label><input defaultValue="Moi Tech" /></div>
-              <div className="form-group"><label>Admin Email</label><input defaultValue="admin@moitech.in" /></div>
-              <div className="form-group"><label>WhatsApp API Key</label><input placeholder="Enter API key" /></div>
-              <div className="form-group"><label>Currency</label><select><option>INR (₹)</option></select></div>
-              <div className="form-group full"><label>Welcome Message (Tamil)</label><textarea defaultValue="வாழ்த்துக்கள்! உங்கள் மொய் பட்டியல் புதுப்பிக்கப்பட்டது." /></div>
+              <div className="form-group"><label>{t("admin.labelAppName")}</label><input defaultValue="Moi Tech" /></div>
+              <div className="form-group"><label>{t("admin.labelAdminEmail")}</label><input defaultValue="admin@moitech.in" /></div>
+              <div className="form-group"><label>{t("admin.labelWhatsapp")}</label><input placeholder={t("admin.placeholderApi")} /></div>
+              <div className="form-group"><label>{t("admin.labelCurrency")}</label><select><option>{t("admin.currencyInr")}</option></select></div>
+              <div className="form-group full"><label>{t("admin.labelWelcomeTa")}</label><textarea defaultValue="வாழ்த்துக்கள்! உங்கள் மொய் பட்டியல் புதுப்பிக்கப்பட்டது." /></div>
             </div>
-            <button className="btn btn-primary mt-4">Save Settings</button>
+            <button className="btn btn-primary mt-4">{t("admin.saveSettings")}</button>
           </div>
         )}
       </div>
@@ -885,24 +1086,24 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">➕ Add New Affiliate</div>
+              <div className="modal-title">{t("admin.modalAddTitle")}</div>
               <button className="btn-close" onClick={() => setShowModal(false)}>✕</button>
             </div>
             <div className="form-grid">
-              <div className="form-group"><label>Full Name</label><input value={newAff.name} onChange={(e) => setNewAff({ ...newAff, name: e.target.value })} placeholder="Enter name" /></div>
-              <div className="form-group"><label>Email</label><input value={newAff.email} onChange={(e) => setNewAff({ ...newAff, email: e.target.value })} placeholder="Enter email" /></div>
-              <div className="form-group"><label>Phone</label><input value={newAff.phone} onChange={(e) => setNewAff({ ...newAff, phone: e.target.value })} placeholder="Enter phone" /></div>
-              <div className="form-group"><label>Plan</label>
+              <div className="form-group"><label>{t("admin.labelFullName")}</label><input value={newAff.name} onChange={(e) => setNewAff({ ...newAff, name: e.target.value })} placeholder={t("admin.phName")} /></div>
+              <div className="form-group"><label>{t("admin.labelEmail")}</label><input value={newAff.email} onChange={(e) => setNewAff({ ...newAff, email: e.target.value })} placeholder={t("admin.phEmail")} /></div>
+              <div className="form-group"><label>{t("admin.labelPhone")}</label><input value={newAff.phone} onChange={(e) => setNewAff({ ...newAff, phone: e.target.value })} placeholder={t("admin.phPhone")} /></div>
+              <div className="form-group"><label>{t("admin.labelPlan")}</label>
                 <select value={newAff.plan} onChange={(e) => setNewAff({ ...newAff, plan: e.target.value })}>
-                  <option value="basic">Basic - ₹299/mo</option>
-                  <option value="pro">Pro - ₹599/mo</option>
-                  <option value="enterprise">Enterprise - ₹1299/mo</option>
+                  <option value="basic">{t("admin.planOptBasic")}</option>
+                  <option value="pro">{t("admin.planOptPro")}</option>
+                  <option value="enterprise">{t("admin.planOptEnt")}</option>
                 </select>
               </div>
             </div>
             <div className="flex gap-3 mt-4">
-              <button className="btn btn-primary" onClick={addAffiliate}>Add Affiliate</button>
-              <button className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={addAffiliate}>{t("admin.btnAddAffiliate")}</button>
+              <button className="btn btn-outline" onClick={() => setShowModal(false)}>{t("admin.cancel")}</button>
             </div>
           </div>
         </div>
@@ -915,6 +1116,12 @@ function AdminDashboard({ affiliates, setAffiliates, events, moi }) {
 
 // ============ AFFILIATE DASHBOARD ============
 function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
+  const { t } = useLanguage();
+  const relations = Array.isArray(t("relations")) ? t("relations") : [];
+  const paymentMethods = Array.isArray(t("paymentMethods")) ? t("paymentMethods") : [];
+  const defaultRelation = relations[0] ?? "";
+  const defaultMethod = paymentMethods[0] ?? "Cash";
+
   const [page, setPage] = useState("events");
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
@@ -922,48 +1129,61 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
   const [editingMoi, setEditingMoi] = useState(null);
   const [toast, setToast] = useState(null);
   const [search, setSearch] = useState("");
+  const [showVoided, setShowVoided] = useState(false);
+  const [showDenoms, setShowDenoms] = useState(false);
 
   const myEvents = events.filter((e) => e.affiliateId === 1);
 
+  const blankMoi = () => ({ name: "", amount: "", phone: "", address: "", relation: defaultRelation, method: defaultMethod, note: "", voided: false, denoms: emptyDenoms() });
   const [newEvent, setNewEvent] = useState({ name: "", type: "wedding", date: "", venue: "", owner: "", ownerPhone: "", ownerEmail: "" });
-  const [newMoi, setNewMoi] = useState({ name: "", amount: "", phone: "", address: "", relation: "", method: "Cash", note: "" });
+  const [newMoi, setNewMoi] = useState(blankMoi());
 
   const addEvent = () => {
-    setEvents([...events, { ...newEvent, id: Date.now(), affiliateId: 1, status: "upcoming" }]);
+    setEvents([...events, { ...newEvent, id: crypto.randomUUID(), affiliateId: 1, status: "upcoming" }]);
     setShowEventModal(false);
-    setToast("Event created successfully!");
+    setToast(t("affiliate.toastEventCreated"));
     setNewEvent({ name: "", type: "wedding", date: "", venue: "", owner: "", ownerPhone: "", ownerEmail: "" });
   };
 
   const saveMoi = () => {
+    const amount = Number(newMoi.amount);
     if (editingMoi) {
-      setMoi(moi.map((m) => m.id === editingMoi.id ? { ...editingMoi, ...newMoi, amount: Number(newMoi.amount) } : m));
-      setToast("Moi entry updated!");
+      setMoi(moi.map((m) => m.id === editingMoi.id ? { ...editingMoi, ...newMoi, amount } : m));
+      setToast(t("affiliate.toastMoiUpdated"));
     } else {
-      setMoi([...moi, { ...newMoi, id: Date.now(), eventId: selectedEvent.id, amount: Number(newMoi.amount) }]);
-      setToast("Moi entry added!");
+      setMoi([...moi, { ...newMoi, id: crypto.randomUUID(), eventId: selectedEvent.id, amount, voided: false }]);
+      setToast(t("affiliate.toastMoiAdded"));
     }
     setShowMoiModal(false);
     setEditingMoi(null);
-    setNewMoi({ name: "", amount: "", phone: "", address: "", relation: "", method: "Cash", note: "" });
+    setNewMoi(blankMoi());
+    setShowDenoms(false);
   };
 
   const openEdit = (m) => {
     setEditingMoi(m);
-    setNewMoi({ name: m.name, amount: m.amount, phone: m.phone, address: m.address, relation: m.relation, method: m.method, note: m.note });
+    setNewMoi({ name: m.name, amount: m.amount, phone: m.phone, address: m.address, relation: m.relation, method: m.method, note: m.note, voided: m.voided, denoms: m.denoms || emptyDenoms() });
+    setShowDenoms(denomSum(m.denoms) > 0);
     setShowMoiModal(true);
   };
 
-  const deleteMoi = (id) => { setMoi(moi.filter((m) => m.id !== id)); setToast("Entry deleted."); };
+  const voidMoi = (id) => {
+    if (!window.confirm(t("void.confirmMsg"))) return;
+    setMoi(moi.map((m) => m.id === id ? { ...m, voided: true } : m));
+    setToast(t("void.toastVoided"));
+  };
 
-  const eventMoi = selectedEvent ? moi.filter((m) => m.eventId === selectedEvent.id) : [];
-  const filteredMoi = eventMoi.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()) || m.phone.includes(search));
+  const eventMoiAll = selectedEvent ? moi.filter((m) => m.eventId === selectedEvent.id) : [];
+  const eventMoi = eventMoiAll.filter((m) => !m.voided);
+  const displayMoi = showVoided ? eventMoiAll : eventMoi;
+  const filteredMoi = displayMoi.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()) || m.phone.includes(search));
   const totalMoi = eventMoi.reduce((s, m) => s + m.amount, 0);
 
   const menuItems = [
-    { id: "events", icon: "🎉", label: "My Events" },
-    { id: "moi", icon: "🎁", label: "Moi Entry" },
-    { id: "reports", icon: "📄", label: "Reports" },
+    { id: "events", icon: "🎉", label: t("affiliate.menuEvents") },
+    { id: "moi", icon: "🎁", label: t("affiliate.menuMoi") },
+    { id: "settlement", icon: "💼", label: t("settlement.title") },
+    { id: "reports", icon: "📄", label: t("affiliate.menuReports") },
   ];
 
   return (
@@ -978,9 +1198,9 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
           <>
             <div className="divider" style={{ margin: "12px 16px" }} />
             <div style={{ padding: "8px 24px" }}>
-              <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Active Event</div>
+              <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{t("affiliate.activeEvent")}</div>
               <div style={{ fontSize: 13, color: "var(--gold-light)", fontWeight: 600 }}>{selectedEvent.name}</div>
-              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{eventMoi.length} entries · {fmt(totalMoi)}</div>
+              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{eventMoi.length} {t("affiliate.entries")} · {fmt(totalMoi)}</div>
             </div>
           </>
         )}
@@ -990,15 +1210,15 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
         {page === "events" && (
           <>
             <div className="page-header">
-              <div><div className="page-title">🎉 My Events</div><div className="page-sub">Manage your function events</div></div>
-              <button className="btn btn-primary" onClick={() => setShowEventModal(true)}>+ New Event</button>
+              <div><div className="page-title">{t("affiliate.myEventsTitle")}</div><div className="page-sub">{t("affiliate.myEventsSub")}</div></div>
+              <button className="btn btn-primary" onClick={() => setShowEventModal(true)}>{t("affiliate.newEvent")}</button>
             </div>
 
             <div className="stats-grid" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 20 }}>
               {[
-                { icon: "🎉", value: myEvents.length, label: "Total Events" },
-                { icon: "🎁", value: moi.filter((m) => myEvents.some((e) => e.id === m.eventId)).length, label: "Total Moi Entries" },
-                { icon: "💰", value: fmt(moi.filter((m) => myEvents.some((e) => e.id === m.eventId)).reduce((s, m) => s + m.amount, 0)), label: "Total Moi Amount" },
+                { icon: "🎉", value: myEvents.length, label: t("affiliate.statTotalEvents") },
+                { icon: "🎁", value: moi.filter((m) => myEvents.some((e) => e.id === m.eventId)).length, label: t("affiliate.statTotalMoiEntries") },
+                { icon: "💰", value: fmt(moi.filter((m) => myEvents.some((e) => e.id === m.eventId)).reduce((s, m) => s + m.amount, 0)), label: t("affiliate.statTotalMoiAmount") },
               ].map((s, i) => <div className="stat-card" key={i}><div className="stat-icon">{s.icon}</div><div className="stat-value">{s.value}</div><div className="stat-label">{s.label}</div></div>)}
             </div>
 
@@ -1006,12 +1226,11 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
               {myEvents.map((e) => {
                 const eMoi = moi.filter((m) => m.eventId === e.id);
                 const total = eMoi.reduce((s, m) => s + m.amount, 0);
-                const et = EVENT_TYPES.find((t) => t.value === e.type);
                 return (
                   <div key={e.id} className="card" style={{ cursor: "pointer" }}>
                     <div className="flex items-center justify-between mb-3">
-                      {eventBadge(e.type)}
-                      <span className={`badge badge-${e.status === "completed" ? "active" : e.status === "active" ? "pending" : "expired"}`}>{e.status}</span>
+                      {eventBadge(e.type, t)}
+                      <span className={`badge badge-${e.status === "completed" ? "active" : e.status === "active" ? "pending" : "expired"}`}>{t(`status.${e.status}`)}</span>
                     </div>
                     <div style={{ fontFamily: "Playfair Display, serif", fontSize: 18, fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>{e.name}</div>
                     <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>📅 {e.date} · 📍 {e.venue}</div>
@@ -1019,9 +1238,9 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
                     <div className="flex items-center justify-between" style={{ borderTop: "1px solid rgba(200,146,42,0.15)", paddingTop: 12 }}>
                       <div>
                         <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "Playfair Display, serif", color: "var(--crimson)" }}>{fmt(total)}</div>
-                        <div style={{ fontSize: 11, color: "var(--muted)" }}>{eMoi.length} entries</div>
+                        <div style={{ fontSize: 11, color: "var(--muted)" }}>{eMoi.length} {t("affiliate.entries")}</div>
                       </div>
-                      <button className="btn btn-gold btn-sm" onClick={() => { setSelectedEvent(e); setPage("moi"); }}>Enter Moi →</button>
+                      <button className="btn btn-gold btn-sm" onClick={() => { setSelectedEvent(e); setPage("moi"); }}>{t("affiliate.enterMoi")}</button>
                     </div>
                   </div>
                 );
@@ -1035,15 +1254,15 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
             {!selectedEvent ? (
               <>
                 <div className="page-header">
-                  <div><div className="page-title">🎁 Moi Entry</div><div className="page-sub">Select an event to enter gift details</div></div>
+                  <div><div className="page-title">{t("affiliate.moiTitle")}</div><div className="page-sub">{t("affiliate.moiSelectSub")}</div></div>
                 </div>
                 <div className="grid-2">
                   {myEvents.map((e) => (
                     <div key={e.id} className="card" style={{ cursor: "pointer" }} onClick={() => setSelectedEvent(e)}>
-                      <div className="flex items-center gap-2 mb-2">{eventBadge(e.type)}</div>
+                      <div className="flex items-center gap-2 mb-2">{eventBadge(e.type, t)}</div>
                       <div style={{ fontFamily: "Playfair Display, serif", fontSize: 16, fontWeight: 700 }}>{e.name}</div>
                       <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>📅 {e.date} · 📍 {e.venue}</div>
-                      <button className="btn btn-primary btn-sm mt-4">Open Event →</button>
+                      <button className="btn btn-primary btn-sm mt-4">{t("affiliate.openEvent")}</button>
                     </div>
                   ))}
                 </div>
@@ -1053,43 +1272,56 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
                 <div className="page-header">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <button className="btn btn-outline btn-sm" onClick={() => setSelectedEvent(null)}>← Back</button>
-                      {eventBadge(selectedEvent.type)}
+                      <button className="btn btn-outline btn-sm" onClick={() => setSelectedEvent(null)}>{t("affiliate.back")}</button>
+                      {eventBadge(selectedEvent.type, t)}
                     </div>
                     <div className="page-title">{selectedEvent.name}</div>
                     <div className="page-sub">📅 {selectedEvent.date} · 📍 {selectedEvent.venue} · 👤 {selectedEvent.owner}</div>
                   </div>
-                  <button className="btn btn-primary" onClick={() => { setEditingMoi(null); setNewMoi({ name: "", amount: "", phone: "", address: "", relation: "", method: "Cash", note: "" }); setShowMoiModal(true); }}>+ Add Moi Entry</button>
+                  <button className="btn btn-primary" onClick={() => { setEditingMoi(null); setNewMoi(blankMoi()); setShowDenoms(false); setShowMoiModal(true); }}>{t("affiliate.addMoiEntry")}</button>
                 </div>
 
                 <div className="stats-grid" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 20 }}>
                   {[
-                    { icon: "🎁", value: eventMoi.length, label: "Total Entries" },
-                    { icon: "💰", value: fmt(totalMoi), label: "Total Moi Amount" },
-                    { icon: "📊", value: fmt(Math.round(totalMoi / Math.max(eventMoi.length, 1))), label: "Avg. per Entry" },
+                    { icon: "🎁", value: eventMoi.length, label: t("affiliate.statTotalEntries") },
+                    { icon: "💰", value: fmt(totalMoi), label: t("affiliate.statTotalMoiAmt") },
+                    { icon: "📊", value: fmt(Math.round(totalMoi / Math.max(eventMoi.length, 1))), label: t("affiliate.statAvgPerEntry") },
                   ].map((s, i) => <div className="stat-card" key={i}><div className="stat-icon">{s.icon}</div><div className="stat-value">{s.value}</div><div className="stat-label">{s.label}</div></div>)}
                 </div>
 
                 <div className="card">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="section-title">🎁 Moi Entries List</div>
+                    <div className="section-title">{t("affiliate.moiListTitle")}</div>
                     <div className="search-wrap" style={{ width: 240 }}>
                       <span className="search-icon">🔍</span>
-                      <input placeholder="Search by name or phone..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                      <input placeholder={t("affiliate.searchMoiPh")} value={search} onChange={(e) => setSearch(e.target.value)} />
                     </div>
                   </div>
 
+                  <div className="flex items-center gap-3 mb-3" style={{ fontSize: 12 }}>
+                    <button className="btn btn-outline btn-sm" onClick={() => setShowVoided((v) => !v)}>
+                      {showVoided ? t("void.hideVoided") : t("void.showVoided")}
+                      {eventMoiAll.filter((m) => m.voided).length > 0 && (
+                        <span className="badge badge-expired" style={{ marginLeft: 6 }}>{eventMoiAll.filter((m) => m.voided).length}</span>
+                      )}
+                    </button>
+                  </div>
+
                   {filteredMoi.length === 0 ? (
-                    <div className="empty-state"><div className="empty-icon">🎁</div><div className="empty-text">No entries yet</div><div className="empty-sub">Click "Add Moi Entry" to start tracking</div></div>
+                    <div className="empty-state"><div className="empty-icon">🎁</div><div className="empty-text">{t("affiliate.emptyMoi")}</div><div className="empty-sub">{t("affiliate.emptyMoiSub")}</div></div>
                   ) : (
                     <div className="table-wrap">
                       <table>
-                        <thead><tr><th>#</th><th>Name</th><th>Amount</th><th>Phone</th><th>Address</th><th>Relation</th><th>Method</th><th>Actions</th></tr></thead>
+                        <thead><tr><th>{t("affiliate.thHash")}</th><th>{t("affiliate.thName")}</th><th>{t("affiliate.thAmount")}</th><th>{t("affiliate.labelPhone")}</th><th>{t("affiliate.thAddress")}</th><th>{t("affiliate.thRelation")}</th><th>{t("affiliate.thMethod")}</th><th>{t("affiliate.thActions")}</th></tr></thead>
                         <tbody>
                           {filteredMoi.map((m, i) => (
-                            <tr key={m.id}>
+                            <tr key={m.id} className={m.voided ? "moi-voided" : ""}>
                               <td style={{ color: "var(--muted)", fontWeight: 700 }}>{i + 1}</td>
-                              <td><strong>{m.name}</strong>{m.note && <div style={{ fontSize: 11, color: "var(--muted)" }}>{m.note}</div>}</td>
+                              <td>
+                                <strong>{m.name}</strong>
+                                {m.voided && <span className="badge badge-expired" style={{ marginLeft: 6, fontSize: 9 }}>{t("void.voided")}</span>}
+                                {m.note && <div style={{ fontSize: 11, color: "var(--muted)" }}>{m.note}</div>}
+                              </td>
                               <td><span className="amount-tag">{fmt(m.amount)}</span></td>
                               <td style={{ fontSize: 13 }}>{m.phone}</td>
                               <td style={{ fontSize: 12, color: "var(--muted)", maxWidth: 150 }}>{m.address}</td>
@@ -1097,8 +1329,9 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
                               <td><span className="badge badge-pending">{m.method}</span></td>
                               <td>
                                 <div className="flex gap-2">
-                                  <button className="btn btn-outline btn-sm" onClick={() => openEdit(m)}>✏️ Edit</button>
-                                  <button className="btn btn-danger btn-sm" onClick={() => deleteMoi(m.id)}>🗑️</button>
+                                  {!m.voided && <button className="btn btn-outline btn-sm" onClick={() => openEdit(m)}>{t("affiliate.edit")}</button>}
+                                  {!m.voided && <button className="btn btn-outline btn-sm" onClick={() => printReceiptFn(m, selectedEvent)}>{t("receipt.btnLabel")}</button>}
+                                  {!m.voided && <button className="btn btn-danger btn-sm" onClick={() => voidMoi(m.id)}>{t("void.btnLabel")}</button>}
                                 </div>
                               </td>
                             </tr>
@@ -1113,30 +1346,124 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
           </>
         )}
 
+        {page === "settlement" && (() => {
+          const settleEvent = selectedEvent || myEvents[0];
+          const sMoi = settleEvent ? moi.filter((m) => m.eventId === settleEvent.id && !m.voided) : [];
+          const cashEntries = sMoi.filter((m) => m.method === "Cash");
+          const digitalEntries = sMoi.filter((m) => m.method !== "Cash");
+          const cashTotal = cashEntries.reduce((s, m) => s + m.amount, 0);
+          const digitalTotal = digitalEntries.reduce((s, m) => s + m.amount, 0);
+          const grandTotal = cashTotal + digitalTotal;
+          const METHODS = ["GPay", "PhonePe", "Paytm", "NEFT", "Cheque"];
+          const methodBreak = METHODS.map((md) => {
+            const entries = sMoi.filter((m) => m.method === md);
+            return { method: md, count: entries.length, total: entries.reduce((s, m) => s + m.amount, 0) };
+          }).filter((x) => x.count > 0);
+          const denomAgg = {};
+          cashEntries.forEach((m) => { if (m.denoms) DENOMS.forEach((d) => { if (m.denoms[d] > 0) denomAgg[d] = (denomAgg[d] || 0) + m.denoms[d]; }); });
+          const hasDenoms = Object.values(denomAgg).some((v) => v > 0);
+          return (
+            <>
+              <div className="page-header">
+                <div><div className="page-title">{t("settlement.title")}</div><div className="page-sub">{t("settlement.sub")}</div></div>
+              </div>
+              {!settleEvent ? (
+                <div className="empty-state"><div className="empty-icon">💼</div><div className="empty-text">{t("settlement.selectEvent")}</div></div>
+              ) : (
+                <>
+                  <div className="section-strip" style={{ marginBottom: 20 }}>{settleEvent.name} · {settleEvent.date}</div>
+                  <div className="settle-total-card mb-4">
+                    <div className="settle-label" style={{ color: "var(--gold-light)" }}>{t("settlement.grandTotal")}</div>
+                    <div className="settle-amount">{fmt(grandTotal)}</div>
+                    <div className="settle-sub">{sMoi.length} {t("settlement.allEntries")}</div>
+                  </div>
+                  <div className="settlement-grid mb-4">
+                    <div className="settlement-card settle-cash">
+                      <div className="settle-label">💵 {t("settlement.cashInHand")}</div>
+                      <div className="settle-amount">{fmt(cashTotal)}</div>
+                      <div className="settle-sub">{cashEntries.length} {t("settlement.cashEntries")}</div>
+                    </div>
+                    <div className="settlement-card settle-bank">
+                      <div className="settle-label">🏦 {t("settlement.inAccount")}</div>
+                      <div className="settle-amount">{fmt(digitalTotal)}</div>
+                      <div className="settle-sub">{digitalEntries.length} {t("settlement.digitalEntries")}</div>
+                    </div>
+                  </div>
+                  {methodBreak.length > 0 && (
+                    <div className="card mb-4">
+                      <div className="card-title">{t("settlement.methodBreakdown")}</div>
+                      <div className="table-wrap">
+                        <table className="method-breakdown-table">
+                          <thead><tr><th>Method</th><th>Entries</th><th>Total</th></tr></thead>
+                          <tbody>
+                            {cashEntries.length > 0 && (
+                              <tr>
+                                <td><strong>Cash</strong></td>
+                                <td>{cashEntries.length}</td>
+                                <td className="amount-positive">{fmt(cashTotal)}</td>
+                              </tr>
+                            )}
+                            {methodBreak.map((mb) => (
+                              <tr key={mb.method}>
+                                <td><strong>{mb.method}</strong></td>
+                                <td>{mb.count}</td>
+                                <td className="amount-positive">{fmt(mb.total)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                  {hasDenoms ? (
+                    <div className="card">
+                      <div className="card-title">{t("settlement.denomBreakdown")}</div>
+                      <div className="denom-grid">
+                        {DENOMS.filter((d) => denomAgg[d] > 0).map((d) => (
+                          <div key={d} className="denom-row">
+                            <span className="denom-label">₹{d}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700 }}>× {denomAgg[d]}</span>
+                            <span className="denom-sub">= {fmt(d * denomAgg[d])}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="denom-total-bar" style={{ marginTop: 14 }}>
+                        <span>{t("denom.total")}</span>
+                        <span>{fmt(DENOMS.reduce((s, d) => s + d * (denomAgg[d] || 0), 0))}</span>
+                      </div>
+                    </div>
+                  ) : cashEntries.length > 0 ? (
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>{t("settlement.nodenoms")}</div>
+                  ) : null}
+                </>
+              )}
+            </>
+          );
+        })()}
+
         {page === "reports" && (
           <>
             <div className="page-header">
-              <div><div className="page-title">📄 Reports</div><div className="page-sub">Export and print your Moi lists</div></div>
+              <div><div className="page-title">{t("affiliate.reportsTitle")}</div><div className="page-sub">{t("affiliate.reportsSub")}</div></div>
             </div>
             <div className="card">
-              <div className="card-title">📋 Event Reports</div>
+              <div className="card-title">{t("affiliate.eventReports")}</div>
               <div className="table-wrap">
                 <table>
-                  <thead><tr><th>Event</th><th>Type</th><th>Date</th><th>Entries</th><th>Total Amount</th><th>Export</th></tr></thead>
+                  <thead><tr><th>{t("admin.thEventName")}</th><th>{t("admin.thType")}</th><th>{t("admin.thDate")}</th><th>{t("affiliate.thEntriesCol")}</th><th>{t("affiliate.thAmount")}</th><th>{t("affiliate.thExport")}</th></tr></thead>
                   <tbody>
                     {myEvents.map((e) => {
                       const eMoi = moi.filter((m) => m.eventId === e.id);
                       return (
                         <tr key={e.id}>
                           <td><strong>{e.name}</strong></td>
-                          <td>{eventBadge(e.type)}</td>
+                          <td>{eventBadge(e.type, t)}</td>
                           <td style={{ fontSize: 12, color: "var(--muted)" }}>{e.date}</td>
                           <td>{eMoi.length}</td>
                           <td className="amount-positive">{fmt(eMoi.reduce((s, m) => s + m.amount, 0))}</td>
                           <td>
                             <div className="flex gap-2">
-                              <button className="btn btn-gold btn-sm">🖨️ Print</button>
-                              <button className="btn btn-outline btn-sm">📥 PDF</button>
+                              <button className="btn btn-gold btn-sm" onClick={() => generateEventPDF(e, moi.filter((m) => m.eventId === e.id))}>{t("pdf.btnLabel")}</button>
                             </div>
                           </td>
                         </tr>
@@ -1154,61 +1481,117 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
         <div className="modal-overlay" onClick={() => setShowEventModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">🎉 Create New Event</div>
+              <div className="modal-title">{t("affiliate.modalCreateEvent")}</div>
               <button className="btn-close" onClick={() => setShowEventModal(false)}>✕</button>
             </div>
-            <div className="section-strip">Event Details</div>
+            <div className="section-strip">{t("affiliate.sectionEventDetails")}</div>
             <div className="form-grid mb-4">
-              <div className="form-group full"><label>Event / Function Name</label><input value={newEvent.name} onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })} placeholder="e.g. Murugan & Kavitha Wedding" /></div>
-              <div className="form-group"><label>Event Type</label>
+              <div className="form-group full"><label>{t("affiliate.labelEventName")}</label><input value={newEvent.name} onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })} placeholder={t("affiliate.phEventName")} /></div>
+              <div className="form-group"><label>{t("affiliate.labelEventType")}</label>
                 <select value={newEvent.type} onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}>
-                  {EVENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  {EVENT_TYPE_META.map((et) => (
+                    <option key={et.value} value={et.value}>{t(`eventTypes.${et.value}`)}</option>
+                  ))}
                 </select>
               </div>
-              <div className="form-group"><label>Event Date</label><input type="date" value={newEvent.date} onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })} /></div>
-              <div className="form-group full"><label>Venue</label><input value={newEvent.venue} onChange={(e) => setNewEvent({ ...newEvent, venue: e.target.value })} placeholder="Hall name, city" /></div>
+              <div className="form-group"><label>{t("affiliate.labelEventDate")}</label><input type="date" value={newEvent.date} onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })} /></div>
+              <div className="form-group full"><label>{t("affiliate.labelVenue")}</label><input value={newEvent.venue} onChange={(e) => setNewEvent({ ...newEvent, venue: e.target.value })} placeholder={t("affiliate.phVenue")} /></div>
             </div>
-            <div className="section-strip">Event Owner Details</div>
+            <div className="section-strip">{t("affiliate.sectionOwnerDetails")}</div>
             <div className="form-grid">
-              <div className="form-group"><label>Owner / Host Name</label><input value={newEvent.owner} onChange={(e) => setNewEvent({ ...newEvent, owner: e.target.value })} placeholder="Full name" /></div>
-              <div className="form-group"><label>Owner Phone</label><input value={newEvent.ownerPhone} onChange={(e) => setNewEvent({ ...newEvent, ownerPhone: e.target.value })} placeholder="Mobile number" /></div>
-              <div className="form-group full"><label>Owner Email (for login)</label><input value={newEvent.ownerEmail} onChange={(e) => setNewEvent({ ...newEvent, ownerEmail: e.target.value })} placeholder="Email for event owner login" /></div>
+              <div className="form-group"><label>{t("affiliate.labelOwnerName")}</label><input value={newEvent.owner} onChange={(e) => setNewEvent({ ...newEvent, owner: e.target.value })} placeholder={t("affiliate.phFullName")} /></div>
+              <div className="form-group"><label>{t("affiliate.labelOwnerPhone")}</label><input value={newEvent.ownerPhone} onChange={(e) => setNewEvent({ ...newEvent, ownerPhone: e.target.value })} placeholder={t("affiliate.phMobile")} /></div>
+              <div className="form-group full"><label>{t("affiliate.labelOwnerEmail")}</label><input value={newEvent.ownerEmail} onChange={(e) => setNewEvent({ ...newEvent, ownerEmail: e.target.value })} placeholder={t("affiliate.phOwnerEmail")} /></div>
             </div>
             <div className="flex gap-3 mt-4">
-              <button className="btn btn-primary" onClick={addEvent}>Create Event</button>
-              <button className="btn btn-outline" onClick={() => setShowEventModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={addEvent}>{t("affiliate.createEvent")}</button>
+              <button className="btn btn-outline" onClick={() => setShowEventModal(false)}>{t("admin.cancel")}</button>
             </div>
           </div>
         </div>
       )}
 
       {showMoiModal && (
-        <div className="modal-overlay" onClick={() => setShowMoiModal(false)}>
+        <div className="modal-overlay" onClick={() => { setShowMoiModal(false); setShowDenoms(false); }}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">{editingMoi ? "✏️ Edit Moi Entry" : "🎁 Add Moi Entry"}</div>
-              <button className="btn-close" onClick={() => setShowMoiModal(false)}>✕</button>
+              <div className="modal-title">{editingMoi ? t("affiliate.modalEditMoi") : t("affiliate.modalAddMoi")}</div>
+              <button className="btn-close" onClick={() => { setShowMoiModal(false); setShowDenoms(false); }}>✕</button>
             </div>
             <div className="form-grid">
-              <div className="form-group"><label>Gift Giver Name (மொய் கொடுப்பவர்)</label><input value={newMoi.name} onChange={(e) => setNewMoi({ ...newMoi, name: e.target.value })} placeholder="Full name" /></div>
-              <div className="form-group"><label>Amount / தொகை (₹)</label><input type="number" value={newMoi.amount} onChange={(e) => setNewMoi({ ...newMoi, amount: e.target.value })} placeholder="Enter amount" /></div>
-              <div className="form-group"><label>Phone Number</label><input value={newMoi.phone} onChange={(e) => setNewMoi({ ...newMoi, phone: e.target.value })} placeholder="Mobile number" /></div>
-              <div className="form-group"><label>Relation</label>
+              <div className="form-group"><label>{t("affiliate.labelGiver")}</label><input value={newMoi.name} onChange={(e) => setNewMoi({ ...newMoi, name: e.target.value })} placeholder={t("affiliate.phFullName")} /></div>
+              <div className="form-group">
+                <label>{t("affiliate.labelAmount")}</label>
+                <input type="number" value={newMoi.amount} onChange={(e) => setNewMoi({ ...newMoi, amount: e.target.value })} placeholder={t("affiliate.phAmount")} />
+              </div>
+              <div className="form-group"><label>{t("affiliate.labelPhone")}</label><input value={newMoi.phone} onChange={(e) => setNewMoi({ ...newMoi, phone: e.target.value })} placeholder={t("affiliate.phMobile")} /></div>
+              <div className="form-group"><label>{t("affiliate.labelRelation")}</label>
                 <select value={newMoi.relation} onChange={(e) => setNewMoi({ ...newMoi, relation: e.target.value })}>
-                  {["Uncle", "Aunt", "Friend", "Colleague", "Neighbor", "Relative", "Brother", "Sister", "Other"].map((r) => <option key={r}>{r}</option>)}
+                  {relations.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
-              <div className="form-group"><label>Payment Method</label>
-                <select value={newMoi.method} onChange={(e) => setNewMoi({ ...newMoi, method: e.target.value })}>
-                  {["Cash", "GPay", "PhonePe", "Paytm", "NEFT", "Cheque"].map((m) => <option key={m}>{m}</option>)}
+              <div className="form-group"><label>{t("affiliate.labelPaymentMethod")}</label>
+                <select value={newMoi.method} onChange={(e) => setNewMoi({ ...newMoi, method: e.target.value, denoms: emptyDenoms() })} >
+                  {paymentMethods.map((pm) => <option key={pm} value={pm}>{pm}</option>)}
                 </select>
               </div>
-              <div className="form-group full"><label>Address</label><input value={newMoi.address} onChange={(e) => setNewMoi({ ...newMoi, address: e.target.value })} placeholder="City / Area" /></div>
-              <div className="form-group full"><label>Note (Optional)</label><input value={newMoi.note} onChange={(e) => setNewMoi({ ...newMoi, note: e.target.value })} placeholder="Any note or message" /></div>
+              <div className="form-group full"><label>{t("affiliate.labelAddress")}</label><input value={newMoi.address} onChange={(e) => setNewMoi({ ...newMoi, address: e.target.value })} placeholder={t("affiliate.phAddress")} /></div>
+              <div className="form-group full"><label>{t("affiliate.labelNote")}</label><input value={newMoi.note} onChange={(e) => setNewMoi({ ...newMoi, note: e.target.value })} placeholder={t("affiliate.phNote")} /></div>
+
+              {newMoi.method === "Cash" && (
+                <div className="form-group full">
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    style={{ marginBottom: 8 }}
+                    onClick={() => { setShowDenoms((v) => !v); if (showDenoms) setNewMoi({ ...newMoi, denoms: emptyDenoms() }); }}
+                  >
+                    {showDenoms ? t("denom.collapse") : t("denom.expand")}
+                  </button>
+                  {showDenoms && (
+                    <div className="denom-section">
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>{t("denom.hint")}</div>
+                      <div className="denom-grid">
+                        {DENOMS.map((d) => {
+                          const qty = newMoi.denoms?.[d] || 0;
+                          const sub = d * qty;
+                          return (
+                            <div key={d} className="denom-row">
+                              <span className="denom-label">₹{d}</span>
+                              <input
+                                type="number"
+                                min="0"
+                                className="denom-qty"
+                                value={qty || ""}
+                                placeholder="0"
+                                onChange={(e) => {
+                                  const nd = { ...(newMoi.denoms || emptyDenoms()), [d]: Number(e.target.value) || 0 };
+                                  const autoAmt = denomSum(nd);
+                                  setNewMoi({ ...newMoi, denoms: nd, amount: autoAmt > 0 ? autoAmt : newMoi.amount });
+                                }}
+                              />
+                              {sub > 0 && <span className="denom-sub">={fmt(sub)}</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {denomSum(newMoi.denoms) > 0 && (
+                        <div className="denom-total-bar">
+                          <span>{t("denom.total")}</span>
+                          <span>{fmt(denomSum(newMoi.denoms))}</span>
+                        </div>
+                      )}
+                      {denomSum(newMoi.denoms) > 0 && Number(newMoi.amount) !== denomSum(newMoi.denoms) && (
+                        <div style={{ fontSize: 11, color: "var(--crimson-light)", marginTop: 6, fontWeight: 600 }}>⚠️ {t("denom.mismatch")}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex gap-3 mt-4">
-              <button className="btn btn-primary" onClick={saveMoi}>{editingMoi ? "Update Entry" : "Add Entry"}</button>
-              <button className="btn btn-outline" onClick={() => setShowMoiModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveMoi}>{editingMoi ? t("affiliate.updateEntry") : t("affiliate.addEntry")}</button>
+              <button className="btn btn-outline" onClick={() => { setShowMoiModal(false); setShowDenoms(false); }}>{t("admin.cancel")}</button>
             </div>
           </div>
         </div>
@@ -1221,38 +1604,40 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
 
 // ============ EVENT OWNER VIEW (MOBILE) ============
 function OwnerView({ events, moi }) {
+  const { t } = useLanguage();
   const myEvent = events.find((e) => e.ownerEmail === "murugan@gmail.com") || events[0];
   const eventMoi = moi.filter((m) => m.eventId === myEvent?.id);
   const total = eventMoi.reduce((s, m) => s + m.amount, 0);
   const [search, setSearch] = useState("");
   const filtered = eventMoi.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()));
+  const typeLabel = myEvent?.type ? t(`eventTypes.${myEvent.type}`) : t("eventTypes.function");
 
   return (
     <div className="main" style={{ background: "linear-gradient(135deg, #f0e6d0 0%, #e8d5b0 100%)", minHeight: "calc(100vh - 64px)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 20px" }}>
       <div>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontFamily: "Playfair Display, serif", fontSize: 14, color: "var(--muted)", marginBottom: 4 }}>📱 Event Owner Mobile View</div>
-          <div style={{ fontSize: 12, color: "var(--muted)" }}>This is how the event owner sees their Moi list on mobile</div>
+          <div style={{ fontFamily: "Playfair Display, serif", fontSize: 14, color: "var(--muted)", marginBottom: 4 }}>{t("owner.mobileViewTitle")}</div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("owner.mobileViewSub")}</div>
         </div>
 
         <div className="mobile-view">
           <div className="mobile-header">
-            <div className="mobile-event-type">{EVENT_TYPES.find((t) => t.value === myEvent?.type)?.label || "Function"}</div>
+            <div className="mobile-event-type">{typeLabel}</div>
             <div className="mobile-event-name">{myEvent?.name}</div>
             <div className="mobile-date">📅 {myEvent?.date} · 📍 {myEvent?.venue}</div>
           </div>
 
           <div className="mobile-body">
             <div className="mobile-total">
-              <div className="mobile-total-label">மொத்த மொய் தொகை</div>
+              <div className="mobile-total-label">{t("owner.totalMoiLabel")}</div>
               <div className="mobile-total-amount">{fmt(total)}</div>
-              <div className="mobile-total-sub">{eventMoi.length} gift givers · Live updating</div>
+              <div className="mobile-total-sub">{eventMoi.length} {t("owner.giftGivers")} · {t("owner.liveUpdating")}</div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
               {[
-                { icon: "🎁", value: eventMoi.length, label: "Entries" },
-                { icon: "📊", value: fmt(Math.round(total / Math.max(eventMoi.length, 1))), label: "Average" },
+                { icon: "🎁", value: eventMoi.length, label: t("owner.labelEntries") },
+                { icon: "📊", value: fmt(Math.round(total / Math.max(eventMoi.length, 1))), label: t("owner.labelAverage") },
               ].map((s, i) => (
                 <div key={i} style={{ background: "var(--cream)", borderRadius: 10, padding: "10px 14px", textAlign: "center" }}>
                   <div style={{ fontSize: 20 }}>{s.icon}</div>
@@ -1264,7 +1649,7 @@ function OwnerView({ events, moi }) {
 
             <div style={{ position: "relative", marginBottom: 12 }}>
               <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 14 }}>🔍</span>
-              <input placeholder="Search gift giver..." style={{ width: "100%", paddingLeft: 32, fontSize: 13 }} value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input placeholder={t("owner.searchPh")} style={{ width: "100%", paddingLeft: 32, fontSize: 13 }} value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
 
             <div style={{ maxHeight: 320, overflowY: "auto" }}>
@@ -1280,7 +1665,7 @@ function OwnerView({ events, moi }) {
             </div>
 
             <div style={{ marginTop: 16, padding: "12px", background: "rgba(200,146,42,0.1)", borderRadius: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: "var(--gold-dark)", fontWeight: 600 }}>🔴 LIVE · Auto-refreshing every 30 seconds</div>
+              <div style={{ fontSize: 11, color: "var(--gold-dark)", fontWeight: 600 }}>{t("owner.liveBanner")}</div>
             </div>
           </div>
         </div>
@@ -1295,6 +1680,14 @@ export default function App() {
   const [events, setEvents] = useState(initialEvents);
   const [moi, setMoi] = useState(initialMoi);
   const [affiliates, setAffiliates] = useState(initialAffiliates);
+  const [theme, setTheme] = useState(() => localStorage.getItem("moi-theme") || "light");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("moi-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
   const users = { admin: "Admin", affiliate: "Ravi Kumar", owner: "Murugan S" };
 
@@ -1309,7 +1702,7 @@ export default function App() {
     <>
       <style>{style}</style>
       <div className="app">
-        <Navbar role={role} userName={users[role]} onLogout={() => setRole(null)} />
+        <Navbar role={role} userName={users[role]} onLogout={() => setRole(null)} theme={theme} toggleTheme={toggleTheme} />
         {role === "admin" && <AdminDashboard affiliates={affiliates} setAffiliates={setAffiliates} events={events} moi={moi} />}
         {role === "affiliate" && <AffiliateDashboard events={events} setEvents={setEvents} moi={moi} setMoi={setMoi} />}
         {role === "owner" && <OwnerView events={events} moi={moi} />}
