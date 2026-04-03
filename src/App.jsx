@@ -574,6 +574,18 @@ const style = `
   .settle-total-card { background: linear-gradient(135deg, var(--crimson), #6B0000); color: white; border-radius: var(--radius); padding: 24px; text-align: center; margin-bottom: 24px; }
   .settle-total-card .settle-amount { color: var(--gold-light); }
   .method-breakdown-table td { padding: 10px 14px; }
+
+  /* WRITER CHIPS */
+  .writers-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 28px; }
+  .writer-chip { display: inline-flex; align-items: center; gap: 7px; background: rgba(200,146,42,0.10); border: 1px solid rgba(200,146,42,0.30); border-radius: 20px; padding: 4px 8px 4px 12px; font-size: 12px; font-weight: 600; color: var(--gold-dark); }
+  html[data-theme="dark"] .writer-chip { color: var(--gold-light); background: rgba(200,146,42,0.15); }
+  .writer-chip .chip-phone { font-size: 10px; color: var(--muted); font-weight: 400; }
+  .chip-remove { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 15px; padding: 0; line-height: 1; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+  .chip-remove:hover { color: #dc2626; background: rgba(220,38,38,0.12); }
+  .writer-mini-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; margin-top: 8px; }
+  .writer-mini-form input { font-size: 13px !important; padding: 8px 10px !important; }
+  .written-by-tag { font-size: 10px; color: var(--gold-dark); margin-top: 3px; font-weight: 600; opacity: 0.8; }
+  html[data-theme="dark"] .written-by-tag { color: var(--gold-light); }
 `;
 
 // ============ DATA ============
@@ -592,17 +604,17 @@ const emptyDenoms = () => Object.fromEntries(DENOMS.map((d) => [d, 0]));
 const denomSum = (denoms) => DENOMS.reduce((s, d) => s + d * (denoms?.[d] || 0), 0);
 
 const initialEvents = [
-  { id: 1, name: "Murugan & Kavitha Wedding", type: "wedding", date: "2025-02-10", venue: "Madurai Palace", owner: "Murugan S", ownerPhone: "9876543210", ownerEmail: "murugan@gmail.com", affiliateId: 1, status: "completed" },
-  { id: 2, name: "Priya's Ear Piercing Ceremony", type: "ear", date: "2025-02-18", venue: "Chennai Community Hall", owner: "Rajesh P", ownerPhone: "9865432100", ownerEmail: "rajesh@gmail.com", affiliateId: 1, status: "active" },
-  { id: 3, name: "Karthik & Deepa Engagement", type: "engagement", date: "2025-03-05", venue: "Coimbatore Convention", owner: "Karthik R", ownerPhone: "9823456710", ownerEmail: "karthik@gmail.com", affiliateId: 2, status: "upcoming" },
+  { id: 1, name: "Murugan & Kavitha Wedding", type: "wedding", date: "2025-02-10", venue: "Madurai Palace", owner: "Murugan S", ownerPhone: "9876543210", ownerEmail: "murugan@gmail.com", affiliateId: 1, status: "completed", writers: [{ id: "w1", name: "Ravi Kumar", phone: "9876500001" }, { id: "w2", name: "Senthil M", phone: "9876500002" }] },
+  { id: 2, name: "Priya's Ear Piercing Ceremony", type: "ear", date: "2025-02-18", venue: "Chennai Community Hall", owner: "Rajesh P", ownerPhone: "9865432100", ownerEmail: "rajesh@gmail.com", affiliateId: 1, status: "active", writers: [{ id: "w3", name: "Priya D", phone: "9865400001" }] },
+  { id: 3, name: "Karthik & Deepa Engagement", type: "engagement", date: "2025-03-05", venue: "Coimbatore Convention", owner: "Karthik R", ownerPhone: "9823456710", ownerEmail: "karthik@gmail.com", affiliateId: 2, status: "upcoming", writers: [] },
 ];
 
 const initialMoi = [
-  { id: 1, eventId: 1, name: "Anbu Selvan", amount: 2000, phone: "9876501234", address: "12, Anna Nagar, Chennai", relation: "Uncle", method: "Cash", note: "Blessings", voided: false, denoms: { 500: 4, 200: 0, 100: 0, 50: 0, 20: 0, 10: 0, 5: 0, 2: 0, 1: 0 } },
-  { id: 2, eventId: 1, name: "Muthu Lakshmi", amount: 5000, phone: "9865430012", address: "5, Gandhi St, Madurai", relation: "Friend", method: "GPay", note: "", voided: false, denoms: emptyDenoms() },
-  { id: 3, eventId: 1, name: "Subramanian K", amount: 1500, phone: "9812345678", address: "78, Nehru Road, Trichy", relation: "Colleague", method: "Cash", note: "With love", voided: false, denoms: { 500: 3, 200: 0, 100: 0, 50: 0, 20: 0, 10: 0, 5: 0, 2: 0, 1: 0 } },
-  { id: 4, eventId: 2, name: "Viji Ramasamy", amount: 3000, phone: "9800123456", address: "3, Temple St, Thanjavur", relation: "Aunt", method: "Cash", note: "", voided: false, denoms: { 500: 6, 200: 0, 100: 0, 50: 0, 20: 0, 10: 0, 5: 0, 2: 0, 1: 0 } },
-  { id: 5, eventId: 2, name: "Durai Murugan", amount: 500, phone: "9755432100", address: "22, Main Road, Salem", relation: "Neighbor", method: "PhonePe", note: "", voided: false, denoms: emptyDenoms() },
+  { id: 1, eventId: 1, name: "Anbu Selvan", amount: 2000, phone: "9876501234", address: "12, Anna Nagar, Chennai", relation: "Uncle", method: "Cash", note: "Blessings", voided: false, denoms: { 500: 4, 200: 0, 100: 0, 50: 0, 20: 0, 10: 0, 5: 0, 2: 0, 1: 0 }, writtenBy: { name: "Ravi Kumar", phone: "9876500001" } },
+  { id: 2, eventId: 1, name: "Muthu Lakshmi", amount: 5000, phone: "9865430012", address: "5, Gandhi St, Madurai", relation: "Friend", method: "GPay", note: "", voided: false, denoms: emptyDenoms(), writtenBy: { name: "Senthil M", phone: "9876500002" } },
+  { id: 3, eventId: 1, name: "Subramanian K", amount: 1500, phone: "9812345678", address: "78, Nehru Road, Trichy", relation: "Colleague", method: "Cash", note: "With love", voided: false, denoms: { 500: 3, 200: 0, 100: 0, 50: 0, 20: 0, 10: 0, 5: 0, 2: 0, 1: 0 }, writtenBy: { name: "Ravi Kumar", phone: "9876500001" } },
+  { id: 4, eventId: 2, name: "Viji Ramasamy", amount: 3000, phone: "9800123456", address: "3, Temple St, Thanjavur", relation: "Aunt", method: "Cash", note: "", voided: false, denoms: { 500: 6, 200: 0, 100: 0, 50: 0, 20: 0, 10: 0, 5: 0, 2: 0, 1: 0 }, writtenBy: { name: "Priya D", phone: "9865400001" } },
+  { id: 5, eventId: 2, name: "Durai Murugan", amount: 500, phone: "9755432100", address: "22, Main Road, Salem", relation: "Neighbor", method: "PhonePe", note: "", voided: false, denoms: emptyDenoms(), writtenBy: { name: "Priya D", phone: "9865400001" } },
 ];
 
 const initialAffiliates = [
@@ -1131,18 +1143,75 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
   const [search, setSearch] = useState("");
   const [showVoided, setShowVoided] = useState(false);
   const [showDenoms, setShowDenoms] = useState(false);
+  const [writerDraft, setWriterDraft] = useState({ name: "", phone: "" });
+  const [showWritersModal, setShowWritersModal] = useState(false);
+  const [editingWritersEventId, setEditingWritersEventId] = useState(null);
+  const [editingWritersList, setEditingWritersList] = useState([]);
+  const [writerEditDraft, setWriterEditDraft] = useState({ name: "", phone: "" });
+  const [inlineEditingWriterId, setInlineEditingWriterId] = useState(null);
+  const [inlineEditDraft, setInlineEditDraft] = useState({ name: "", phone: "" });
 
   const myEvents = events.filter((e) => e.affiliateId === 1);
 
-  const blankMoi = () => ({ name: "", amount: "", phone: "", address: "", relation: defaultRelation, method: defaultMethod, note: "", voided: false, denoms: emptyDenoms() });
-  const [newEvent, setNewEvent] = useState({ name: "", type: "wedding", date: "", venue: "", owner: "", ownerPhone: "", ownerEmail: "" });
+  const blankMoi = () => ({ name: "", amount: "", phone: "", address: "", relation: defaultRelation, method: defaultMethod, note: "", voided: false, denoms: emptyDenoms(), writtenBy: { name: "", phone: "" } });
+  const [newEvent, setNewEvent] = useState({ name: "", type: "wedding", date: "", venue: "", owner: "", ownerPhone: "", ownerEmail: "", writers: [] });
   const [newMoi, setNewMoi] = useState(blankMoi());
+
+  const addWriterToEvent = () => {
+    if (!writerDraft.name.trim()) return;
+    setNewEvent((ev) => ({ ...ev, writers: [...(ev.writers || []), { id: crypto.randomUUID(), name: writerDraft.name.trim(), phone: writerDraft.phone.trim() }] }));
+    setWriterDraft({ name: "", phone: "" });
+  };
+
+  const removeWriterFromEvent = (wid) => {
+    setNewEvent((ev) => ({ ...ev, writers: (ev.writers || []).filter((w) => w.id !== wid) }));
+  };
+
+  const openWritersModal = (ev) => {
+    setEditingWritersEventId(ev.id);
+    setEditingWritersList(JSON.parse(JSON.stringify(ev.writers || [])));
+    setWriterEditDraft({ name: "", phone: "" });
+    setInlineEditingWriterId(null);
+    setShowWritersModal(true);
+  };
+
+  const addWriterToEditing = () => {
+    if (!writerEditDraft.name.trim()) return;
+    setEditingWritersList((list) => [...list, { id: crypto.randomUUID(), name: writerEditDraft.name.trim(), phone: writerEditDraft.phone.trim() }]);
+    setWriterEditDraft({ name: "", phone: "" });
+  };
+
+  const removeWriterFromEditing = (wid) => {
+    setEditingWritersList((list) => list.filter((w) => w.id !== wid));
+    if (inlineEditingWriterId === wid) setInlineEditingWriterId(null);
+  };
+
+  const startInlineEdit = (w) => {
+    setInlineEditingWriterId(w.id);
+    setInlineEditDraft({ name: w.name, phone: w.phone });
+  };
+
+  const saveInlineEdit = (wid) => {
+    if (!inlineEditDraft.name.trim()) return;
+    setEditingWritersList((list) => list.map((w) => w.id === wid ? { ...w, name: inlineEditDraft.name.trim(), phone: inlineEditDraft.phone.trim() } : w));
+    setInlineEditingWriterId(null);
+  };
+
+  const saveWriters = () => {
+    setEvents((evs) => evs.map((ev) => ev.id === editingWritersEventId ? { ...ev, writers: editingWritersList } : ev));
+    if (selectedEvent && selectedEvent.id === editingWritersEventId) {
+      setSelectedEvent((ev) => ({ ...ev, writers: editingWritersList }));
+    }
+    setShowWritersModal(false);
+    setToast(t("writer.toastSaved"));
+  };
 
   const addEvent = () => {
     setEvents([...events, { ...newEvent, id: crypto.randomUUID(), affiliateId: 1, status: "upcoming" }]);
     setShowEventModal(false);
     setToast(t("affiliate.toastEventCreated"));
-    setNewEvent({ name: "", type: "wedding", date: "", venue: "", owner: "", ownerPhone: "", ownerEmail: "" });
+    setNewEvent({ name: "", type: "wedding", date: "", venue: "", owner: "", ownerPhone: "", ownerEmail: "", writers: [] });
+    setWriterDraft({ name: "", phone: "" });
   };
 
   const saveMoi = () => {
@@ -1162,7 +1231,7 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
 
   const openEdit = (m) => {
     setEditingMoi(m);
-    setNewMoi({ name: m.name, amount: m.amount, phone: m.phone, address: m.address, relation: m.relation, method: m.method, note: m.note, voided: m.voided, denoms: m.denoms || emptyDenoms() });
+    setNewMoi({ name: m.name, amount: m.amount, phone: m.phone, address: m.address, relation: m.relation, method: m.method, note: m.note, voided: m.voided, denoms: m.denoms || emptyDenoms(), writtenBy: m.writtenBy || { name: "", phone: "" } });
     setShowDenoms(denomSum(m.denoms) > 0);
     setShowMoiModal(true);
   };
@@ -1234,13 +1303,26 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
                     </div>
                     <div style={{ fontFamily: "Playfair Display, serif", fontSize: 18, fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>{e.name}</div>
                     <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>📅 {e.date} · 📍 {e.venue}</div>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 16 }}>👤 {e.owner} · 📞 {e.ownerPhone}</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: (e.writers || []).length > 0 ? 8 : 16 }}>👤 {e.owner} · 📞 {e.ownerPhone}</div>
+                    {(e.writers || []).length > 0 && (
+                      <div className="writers-list" style={{ marginBottom: 12, marginTop: 0 }}>
+                        {(e.writers || []).map((w) => (
+                          <div key={w.id} className="writer-chip" style={{ fontSize: 11 }}>
+                            <span>✍️ {w.name}</span>
+                            {w.phone && <span className="chip-phone">· {w.phone}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between" style={{ borderTop: "1px solid rgba(200,146,42,0.15)", paddingTop: 12 }}>
                       <div>
                         <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "Playfair Display, serif", color: "var(--crimson)" }}>{fmt(total)}</div>
                         <div style={{ fontSize: 11, color: "var(--muted)" }}>{eMoi.length} {t("affiliate.entries")}</div>
                       </div>
-                      <button className="btn btn-gold btn-sm" onClick={() => { setSelectedEvent(e); setPage("moi"); }}>{t("affiliate.enterMoi")}</button>
+                      <div className="flex gap-2">
+                        <button className="btn btn-outline btn-sm" onClick={(ev) => { ev.stopPropagation(); openWritersModal(e); }}>{t("writer.editWriters")}</button>
+                        <button className="btn btn-gold btn-sm" onClick={() => { setSelectedEvent(e); setPage("moi"); }}>{t("affiliate.enterMoi")}</button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -1277,8 +1359,21 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
                     </div>
                     <div className="page-title">{selectedEvent.name}</div>
                     <div className="page-sub">📅 {selectedEvent.date} · 📍 {selectedEvent.venue} · 👤 {selectedEvent.owner}</div>
+                    {(selectedEvent.writers || []).length > 0 && (
+                      <div className="writers-list" style={{ marginTop: 8 }}>
+                        {(selectedEvent.writers || []).map((w) => (
+                          <div key={w.id} className="writer-chip" style={{ fontSize: 11 }}>
+                            <span>✍️ {w.name}</span>
+                            {w.phone && <span className="chip-phone">· {w.phone}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <button className="btn btn-primary" onClick={() => { setEditingMoi(null); setNewMoi(blankMoi()); setShowDenoms(false); setShowMoiModal(true); }}>{t("affiliate.addMoiEntry")}</button>
+                  <div className="flex gap-2">
+                    <button className="btn btn-outline btn-sm" onClick={() => openWritersModal(selectedEvent)}>{t("writer.editWriters")}</button>
+                    <button className="btn btn-primary" onClick={() => { setEditingMoi(null); setNewMoi(blankMoi()); setShowDenoms(false); setShowMoiModal(true); }}>{t("affiliate.addMoiEntry")}</button>
+                  </div>
                 </div>
 
                 <div className="stats-grid" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 20 }}>
@@ -1312,7 +1407,7 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
                   ) : (
                     <div className="table-wrap">
                       <table>
-                        <thead><tr><th>{t("affiliate.thHash")}</th><th>{t("affiliate.thName")}</th><th>{t("affiliate.thAmount")}</th><th>{t("affiliate.labelPhone")}</th><th>{t("affiliate.thAddress")}</th><th>{t("affiliate.thRelation")}</th><th>{t("affiliate.thMethod")}</th><th>{t("affiliate.thActions")}</th></tr></thead>
+                        <thead><tr><th>{t("affiliate.thHash")}</th><th>{t("affiliate.thName")}</th><th>{t("affiliate.thAmount")}</th><th>{t("affiliate.labelPhone")}</th><th>{t("affiliate.thAddress")}</th><th>{t("affiliate.thRelation")}</th><th>{t("affiliate.thMethod")}</th><th>{t("writer.columnHeader")}</th><th>{t("affiliate.thActions")}</th></tr></thead>
                         <tbody>
                           {filteredMoi.map((m, i) => (
                             <tr key={m.id} className={m.voided ? "moi-voided" : ""}>
@@ -1327,6 +1422,12 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
                               <td style={{ fontSize: 12, color: "var(--muted)", maxWidth: 150 }}>{m.address}</td>
                               <td style={{ fontSize: 12 }}>{m.relation}</td>
                               <td><span className="badge badge-pending">{m.method}</span></td>
+                              <td style={{ fontSize: 12 }}>
+                                {m.writtenBy?.name
+                                  ? <><div style={{ fontWeight: 600, color: "var(--text)" }}>✍️ {m.writtenBy.name}</div>{m.writtenBy.phone && <div style={{ fontSize: 10, color: "var(--muted)" }}>{m.writtenBy.phone}</div>}</>
+                                  : <span style={{ color: "var(--muted)", fontStyle: "italic", fontSize: 11 }}>—</span>
+                                }
+                              </td>
                               <td>
                                 <div className="flex gap-2">
                                   {!m.voided && <button className="btn btn-outline btn-sm" onClick={() => openEdit(m)}>{t("affiliate.edit")}</button>}
@@ -1503,9 +1604,36 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
               <div className="form-group"><label>{t("affiliate.labelOwnerPhone")}</label><input value={newEvent.ownerPhone} onChange={(e) => setNewEvent({ ...newEvent, ownerPhone: e.target.value })} placeholder={t("affiliate.phMobile")} /></div>
               <div className="form-group full"><label>{t("affiliate.labelOwnerEmail")}</label><input value={newEvent.ownerEmail} onChange={(e) => setNewEvent({ ...newEvent, ownerEmail: e.target.value })} placeholder={t("affiliate.phOwnerEmail")} /></div>
             </div>
+
+            <div className="section-strip" style={{ marginTop: 20 }}>✍️ {t("writer.sectionTitle")}</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>{t("writer.sectionSub")}</div>
+            <div className="writer-mini-form">
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ fontSize: 11 }}>{t("writer.labelName")}</label>
+                <input value={writerDraft.name} onChange={(e) => setWriterDraft({ ...writerDraft, name: e.target.value })} placeholder={t("writer.phName")} onKeyDown={(e) => e.key === "Enter" && addWriterToEvent()} />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ fontSize: 11 }}>{t("writer.labelPhone")}</label>
+                <input value={writerDraft.phone} onChange={(e) => setWriterDraft({ ...writerDraft, phone: e.target.value })} placeholder={t("writer.phPhone")} onKeyDown={(e) => e.key === "Enter" && addWriterToEvent()} />
+              </div>
+              <button className="btn btn-gold btn-sm" style={{ alignSelf: "flex-end", whiteSpace: "nowrap" }} onClick={addWriterToEvent}>+ {t("writer.addBtn")}</button>
+            </div>
+            <div className="writers-list">
+              {(newEvent.writers || []).length === 0
+                ? <span style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>{t("writer.noWriters")}</span>
+                : (newEvent.writers || []).map((w) => (
+                  <div key={w.id} className="writer-chip">
+                    <span>✍️ {w.name}</span>
+                    {w.phone && <span className="chip-phone">· {w.phone}</span>}
+                    <button className="chip-remove" onClick={() => removeWriterFromEvent(w.id)}>×</button>
+                  </div>
+                ))
+              }
+            </div>
+
             <div className="flex gap-3 mt-4">
               <button className="btn btn-primary" onClick={addEvent}>{t("affiliate.createEvent")}</button>
-              <button className="btn btn-outline" onClick={() => setShowEventModal(false)}>{t("admin.cancel")}</button>
+              <button className="btn btn-outline" onClick={() => { setShowEventModal(false); setWriterDraft({ name: "", phone: "" }); }}>{t("admin.cancel")}</button>
             </div>
           </div>
         </div>
@@ -1537,6 +1665,37 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
               </div>
               <div className="form-group full"><label>{t("affiliate.labelAddress")}</label><input value={newMoi.address} onChange={(e) => setNewMoi({ ...newMoi, address: e.target.value })} placeholder={t("affiliate.phAddress")} /></div>
               <div className="form-group full"><label>{t("affiliate.labelNote")}</label><input value={newMoi.note} onChange={(e) => setNewMoi({ ...newMoi, note: e.target.value })} placeholder={t("affiliate.phNote")} /></div>
+
+              <div className="form-group full">
+                <label>✍️ {t("writer.labelWrittenBy")}</label>
+                {(selectedEvent?.writers || []).length > 0 ? (
+                  <select
+                    value={newMoi.writtenBy?.name || ""}
+                    onChange={(e) => {
+                      const w = (selectedEvent.writers || []).find((wr) => wr.name === e.target.value);
+                      if (e.target.value === "__other__") {
+                        setNewMoi({ ...newMoi, writtenBy: { name: "", phone: "" } });
+                      } else if (w) {
+                        setNewMoi({ ...newMoi, writtenBy: { name: w.name, phone: w.phone } });
+                      }
+                    }}
+                  >
+                    <option value="">{t("writer.selectWriter")}</option>
+                    {(selectedEvent.writers || []).map((w) => (
+                      <option key={w.id} value={w.name}>{w.name}{w.phone ? ` · ${w.phone}` : ""}</option>
+                    ))}
+                    <option value="__other__">{t("writer.freeEntry")}</option>
+                  </select>
+                ) : null}
+                {((selectedEvent?.writers || []).length === 0 || newMoi.writtenBy?.name === "") && (
+                  <input
+                    style={{ marginTop: (selectedEvent?.writers || []).length > 0 ? 6 : 0 }}
+                    value={newMoi.writtenBy?.name || ""}
+                    onChange={(e) => setNewMoi({ ...newMoi, writtenBy: { ...newMoi.writtenBy, name: e.target.value } })}
+                    placeholder={t("writer.phWrittenBy")}
+                  />
+                )}
+              </div>
 
               {newMoi.method === "Cash" && (
                 <div className="form-group full">
@@ -1592,6 +1751,75 @@ function AffiliateDashboard({ events, setEvents, moi, setMoi }) {
             <div className="flex gap-3 mt-4">
               <button className="btn btn-primary" onClick={saveMoi}>{editingMoi ? t("affiliate.updateEntry") : t("affiliate.addEntry")}</button>
               <button className="btn btn-outline" onClick={() => { setShowMoiModal(false); setShowDenoms(false); }}>{t("admin.cancel")}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWritersModal && (
+        <div className="modal-overlay" onClick={() => setShowWritersModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">✍️ {t("writer.manageTitle")}</div>
+              <button className="btn-close" onClick={() => setShowWritersModal(false)}>✕</button>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              {editingWritersList.length === 0
+                ? <div style={{ fontSize: 13, color: "var(--muted)", fontStyle: "italic", padding: "8px 0" }}>{t("writer.noWriters")}</div>
+                : editingWritersList.map((w) => (
+                  <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid rgba(200,146,42,0.1)" }}>
+                    {inlineEditingWriterId === w.id ? (
+                      <>
+                        <input
+                          value={inlineEditDraft.name}
+                          onChange={(e) => setInlineEditDraft({ ...inlineEditDraft, name: e.target.value })}
+                          placeholder={t("writer.phName")}
+                          style={{ flex: 1, fontSize: 13, padding: "6px 10px" }}
+                          onKeyDown={(e) => e.key === "Enter" && saveInlineEdit(w.id)}
+                          autoFocus
+                        />
+                        <input
+                          value={inlineEditDraft.phone}
+                          onChange={(e) => setInlineEditDraft({ ...inlineEditDraft, phone: e.target.value })}
+                          placeholder={t("writer.phPhone")}
+                          style={{ flex: 1, fontSize: 13, padding: "6px 10px" }}
+                          onKeyDown={(e) => e.key === "Enter" && saveInlineEdit(w.id)}
+                        />
+                        <button className="btn btn-primary btn-sm" onClick={() => saveInlineEdit(w.id)}>✓</button>
+                        <button className="btn btn-outline btn-sm" onClick={() => setInlineEditingWriterId(null)}>✕</button>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>✍️ {w.name}</div>
+                          {w.phone && <div style={{ fontSize: 11, color: "var(--muted)" }}>{w.phone}</div>}
+                        </div>
+                        <button className="btn btn-outline btn-sm" onClick={() => startInlineEdit(w)}>✏️</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => removeWriterFromEditing(w.id)}>🗑️</button>
+                      </>
+                    )}
+                  </div>
+                ))
+              }
+            </div>
+
+            <div className="section-strip" style={{ marginBottom: 10 }}>{t("writer.addBtn")}</div>
+            <div className="writer-mini-form">
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ fontSize: 11 }}>{t("writer.labelName")}</label>
+                <input value={writerEditDraft.name} onChange={(e) => setWriterEditDraft({ ...writerEditDraft, name: e.target.value })} placeholder={t("writer.phName")} onKeyDown={(e) => e.key === "Enter" && addWriterToEditing()} />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ fontSize: 11 }}>{t("writer.labelPhone")}</label>
+                <input value={writerEditDraft.phone} onChange={(e) => setWriterEditDraft({ ...writerEditDraft, phone: e.target.value })} placeholder={t("writer.phPhone")} onKeyDown={(e) => e.key === "Enter" && addWriterToEditing()} />
+              </div>
+              <button className="btn btn-gold btn-sm" style={{ alignSelf: "flex-end" }} onClick={addWriterToEditing}>+ {t("writer.addBtn")}</button>
+            </div>
+
+            <div className="flex gap-3 mt-4">
+              <button className="btn btn-primary" onClick={saveWriters}>{t("writer.saveWriters")}</button>
+              <button className="btn btn-outline" onClick={() => setShowWritersModal(false)}>{t("admin.cancel")}</button>
             </div>
           </div>
         </div>

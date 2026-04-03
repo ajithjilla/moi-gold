@@ -295,5 +295,27 @@
     "totalMoi": "Total Moi",
     "totalEntries": "Total Entries",
     "voidedNote": "Voided entries are excluded from totals."
+  },
+  "writer": {
+    "sectionTitle": "Moi Writers",
+    "sectionSub": "Add people who will record moi entries at the event",
+    "labelName": "Writer Name",
+    "labelPhone": "Writer Mobile",
+    "phName": "Full name",
+    "phPhone": "Mobile number",
+    "addBtn": "Add Writer",
+    "noWriters": "No writers added yet",
+    "columnHeader": "Written By",
+    "writtenByLabel": "Written by",
+    "selectWriter": "Select writer...",
+    "freeEntry": "Other / Type name",
+    "labelWrittenBy": "Recorded By (Writer)",
+    "phWrittenBy": "Writer name",
+    "editWriters": "✏️ Edit Writers",
+    "manageTitle": "Manage Moi Writers",
+    "saveWriters": "Save Writers",
+    "toastSaved": "Writers updated!",
+    "editName": "Edit name",
+    "editPhone": "Edit phone"
   }
 }
