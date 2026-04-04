@@ -1,59 +1,57 @@
 import { useState } from "react";
-
-const ROLE_MAP = {
-  admin: { email: "admin@moitech.in", pass: "admin123" },
-  affiliate: { email: "ravi@gmail.com", pass: "ravi123" },
-  owner: { email: "murugan@gmail.com", pass: "owner123" },
-};
+import { useAuth } from "../context/AuthContext.jsx";
+import { useLanguage } from "../context/useLanguage.js";
+import LanguageToggle from "./LanguageToggle.jsx";
 
 const FEATURES = [
-  { icon: "💍", title: "All Functions Covered", sub: "Wedding, Engagement, Ear Piercing, Cradle & more" },
-  { icon: "📊", title: "Real-time Tracking", sub: "Event owners view gifts live on mobile" },
-  { icon: "🖨️", title: "Print & Export", sub: "PDF reports for families at end of function" },
-  { icon: "🌐", title: "Tamil + English", sub: "Bilingual interface for ease of use" },
+  { icon: "💍", titleKey: "loginFeatures.0.title", subKey: "loginFeatures.0.sub" },
+  { icon: "📊", titleKey: "loginFeatures.1.title", subKey: "loginFeatures.1.sub" },
+  { icon: "🖨️", titleKey: "loginFeatures.2.title", subKey: "loginFeatures.2.sub" },
+  { icon: "🌐", titleKey: "loginFeatures.3.title", subKey: "loginFeatures.3.sub" },
 ];
 
-const ROLES = [
-  ["admin", "🛡️ Admin"],
-  ["affiliate", "💼 Affiliate"],
-  ["owner", "📱 Event Owner"],
-];
-
-export default function LoginPage({ onLogin }) {
-  const [role, setRole] = useState("affiliate");
-  const [email, setEmail] = useState("");
+export default function LoginPage() {
+  const { login } = useAuth();
+  const { t } = useLanguage();
+  const [phone, setPhone] = useState("");
   const [pass, setPass] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    const demo = ROLE_MAP[role];
-    if (email === demo.email && pass === demo.pass) {
-      onLogin(role);
-    } else {
-      onLogin(role);
+  const handleLogin = async () => {
+    if (!phone || !pass) { setError("Phone and password are required"); return; }
+    setError("");
+    setLoading(true);
+    try {
+      await login({ phone, password: pass });
+    } catch (err) {
+      setError(err.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRoleClick = (r) => {
-    setRole(r);
-    setEmail(ROLE_MAP[r].email);
-    setPass(ROLE_MAP[r].pass);
-  };
+  const handleKey = (e) => { if (e.key === "Enter") handleLogin(); };
 
   return (
     <div className="login-page pattern-bg">
+      <div className="login-lang" style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+        <LanguageToggle />
+      </div>
+
       <div className="login-left">
         <div className="login-brand">
           <div className="login-logo-big">M</div>
           <div className="login-app-name">மொய்<br />Moi Tech</div>
-          <div className="login-tagline">Digital Gift Tracking for Tamil Nadu Functions</div>
+          <div className="login-tagline">{t("login.tagline")}</div>
         </div>
         <div className="login-features">
           {FEATURES.map((f, i) => (
             <div className="login-feature" key={i}>
               <div className="feature-icon">{f.icon}</div>
               <div>
-                <div className="feature-text-title">{f.title}</div>
-                <div className="feature-text-sub">{f.sub}</div>
+                <div className="feature-text-title">{t(f.titleKey)}</div>
+                <div className="feature-text-sub">{t(f.subKey)}</div>
               </div>
             </div>
           ))}
@@ -62,40 +60,49 @@ export default function LoginPage({ onLogin }) {
 
       <div className="login-right" style={{ background: "rgba(26,10,0,0.2)", backdropFilter: "blur(10px)" }}>
         <div className="login-card">
-          <div className="login-card-title">Welcome Back</div>
-          <div className="login-card-sub">Sign in to your Moi Tech account</div>
+          <div className="login-card-title">{t("login.welcomeBack")}</div>
+          <div className="login-card-sub">{t("login.signInSub")}</div>
 
-          <div className="role-tabs">
-            {ROLES.map(([r, label]) => (
-              <button
-                key={r}
-                className={`role-tab ${role === r ? "active" : ""}`}
-                onClick={() => handleRoleClick(r)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ marginBottom: 24, background: "rgba(200,146,42,0.1)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "var(--gold-dark)" }}>
-            🔑 Demo: <strong>{ROLE_MAP[role].email}</strong> / <strong>{ROLE_MAP[role].pass}</strong>
-          </div>
+          {error && (
+            <div style={{ background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.3)", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#dc2626", marginBottom: 16 }}>
+              {error}
+            </div>
+          )}
 
           <div className="form-group mb-3">
-            <label>Email Address</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter email" />
+            <label>{t("login.phone") || "Phone Number"}</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Enter mobile number"
+              onKeyDown={handleKey}
+              autoComplete="tel"
+            />
           </div>
           <div className="form-group mb-4">
-            <label>Password</label>
-            <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Enter password" />
+            <label>{t("login.password")}</label>
+            <input
+              type="password"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              placeholder={t("login.passwordPh")}
+              onKeyDown={handleKey}
+              autoComplete="current-password"
+            />
           </div>
 
-          <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", padding: "12px" }} onClick={handleLogin}>
-            Sign In →
+          <button
+            className="btn btn-primary"
+            style={{ width: "100%", justifyContent: "center", padding: "12px" }}
+            onClick={handleLogin}
+            disabled={loading}
+          >
+            {loading ? "Signing in..." : t("login.signIn")}
           </button>
 
           <div style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "var(--muted)" }}>
-            Need an account? Contact <strong style={{ color: "var(--gold-dark)" }}>admin@moitech.in</strong>
+            {t("login.needAccount")} <strong style={{ color: "var(--gold-dark)" }}>admin@moitech.in</strong>
           </div>
         </div>
       </div>

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "./context/useLanguage.js";
+import { useAuth } from "./context/AuthContext.jsx";
 import LanguageToggle from "./components/LanguageToggle.jsx";
+import LoginPage from "./components/LoginPage.jsx";
+import WriterView from "./components/WriterView.jsx";
 
 const style = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Mukta:wght@300;400;500;600;700&display=swap');
@@ -728,100 +731,6 @@ tbody td{padding:9px 12px;border-bottom:1px solid #f0e0c0}
 function Toast({ msg, onClose }) {
   useEffect(() => { const timer = setTimeout(onClose, 3000); return () => clearTimeout(timer); }, [onClose]);
   return <div className="toast">✅ {msg}</div>;
-}
-
-// ============ LOGIN PAGE ============
-function LoginPage({ onLogin }) {
-  const { t } = useLanguage();
-  const [role, setRole] = useState("affiliate");
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-
-  const roleMap = {
-    admin: { email: "admin@moitech.in", pass: "admin123" },
-    affiliate: { email: "ravi@gmail.com", pass: "ravi123" },
-    owner: { email: "murugan@gmail.com", pass: "owner123" },
-  };
-
-  const handleLogin = () => {
-    const demo = roleMap[role];
-    if (email === demo.email && pass === demo.pass) {
-      onLogin(role);
-    } else {
-      // auto-fill demo creds for demo purposes
-      onLogin(role);
-    }
-  };
-
-  const demos = { admin: roleMap.admin, affiliate: roleMap.affiliate, owner: roleMap.owner };
-
-  const loginFeaturesRaw = t("loginFeatures");
-  const featureList = Array.isArray(loginFeaturesRaw) ? loginFeaturesRaw : [];
-  const featureIcons = ["💍", "📊", "🖨️", "🌐"];
-
-  return (
-    <div className="login-page pattern-bg">
-      <div className="login-lang">
-        <LanguageToggle />
-      </div>
-      <div className="login-left">
-        <div className="login-brand">
-          <div className="login-logo-big">M</div>
-          <div className="login-app-name">மொய்<br />Moi Tech</div>
-          <div className="login-tagline">{t("login.tagline")}</div>
-        </div>
-        <div className="login-features">
-          {featureList.map((f, i) => (
-            <div className="login-feature" key={i}>
-              <div className="feature-icon">{featureIcons[i] ?? "✨"}</div>
-              <div>
-                <div className="feature-text-title">{f.title}</div>
-                <div className="feature-text-sub">{f.sub}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="login-right" style={{ background: "rgba(26,10,0,0.2)", backdropFilter: "blur(10px)" }}>
-        <div className="login-card">
-          <div className="login-card-title">{t("login.welcomeBack")}</div>
-          <div className="login-card-sub">{t("login.signInSub")}</div>
-
-          <div className="role-tabs">
-            {[
-              ["admin", t("login.roleAdmin")],
-              ["affiliate", t("login.roleAffiliate")],
-              ["owner", t("login.roleOwner")],
-            ].map(([r, label]) => (
-              <button key={r} className={`role-tab ${role === r ? "active" : ""}`} onClick={() => { setRole(r); setEmail(demos[r].email); setPass(demos[r].pass); }}>{label}</button>
-            ))}
-          </div>
-
-          <div style={{ marginBottom: 24, background: "rgba(200,146,42,0.1)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "var(--gold-dark)" }}>
-            🔑 {t("login.demo")} <strong>{demos[role].email}</strong> / <strong>{demos[role].pass}</strong>
-          </div>
-
-          <div className="form-group mb-3">
-            <label>{t("login.email")}</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("login.emailPh")} />
-          </div>
-          <div className="form-group mb-4">
-            <label>{t("login.password")}</label>
-            <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder={t("login.passwordPh")} />
-          </div>
-
-          <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", padding: "12px" }} onClick={handleLogin}>
-            {t("login.signIn")}
-          </button>
-
-          <div style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "var(--muted)" }}>
-            {t("login.needAccount")} <strong style={{ color: "var(--gold-dark)" }}>admin@moitech.in</strong>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ============ NAVBAR ============
@@ -1904,11 +1813,16 @@ function OwnerView({ events, moi }) {
 
 // ============ MAIN APP ============
 export default function App() {
-  const [role, setRole] = useState(null);
+  const { user, loading, logout } = useAuth();
+  const [theme, setTheme] = useState(() => localStorage.getItem("moi-theme") || "light");
+
+  // Keep in-memory state for affiliates/events/moi so existing dashboard components
+  // continue to work while full API wiring is in place.
+  // The API-connected dashboards (AdminDashboard, AffiliateDashboard) load their own
+  // data internally via useEffect + API calls.
   const [events, setEvents] = useState(initialEvents);
   const [moi, setMoi] = useState(initialMoi);
   const [affiliates, setAffiliates] = useState(initialAffiliates);
-  const [theme, setTheme] = useState(() => localStorage.getItem("moi-theme") || "light");
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -1917,23 +1831,62 @@ export default function App() {
 
   const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
-  const users = { admin: "Admin", affiliate: "Ravi Kumar", owner: "Murugan S" };
+  if (loading) {
+    return (
+      <>
+        <style>{style}</style>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+          <div style={{ fontSize: 18, color: "var(--muted)" }}>Loading...</div>
+        </div>
+      </>
+    );
+  }
 
-  if (!role) return (
-    <>
-      <style>{style}</style>
-      <LoginPage onLogin={setRole} />
-    </>
-  );
+  if (!user) {
+    return (
+      <>
+        <style>{style}</style>
+        <LoginPage />
+      </>
+    );
+  }
+
+  const role = user.role.toLowerCase();
+  const roleDisplay = { admin: "ADMIN", affiliate: "AFFILIATE", user: "USER" }[role] || role;
 
   return (
     <>
       <style>{style}</style>
       <div className="app">
-        <Navbar role={role} userName={users[role]} onLogout={() => setRole(null)} theme={theme} toggleTheme={toggleTheme} />
-        {role === "admin" && <AdminDashboard affiliates={affiliates} setAffiliates={setAffiliates} events={events} moi={moi} />}
-        {role === "affiliate" && <AffiliateDashboard events={events} setEvents={setEvents} moi={moi} setMoi={setMoi} />}
-        {role === "owner" && <OwnerView events={events} moi={moi} />}
+        <Navbar
+          role={role === "admin" ? "admin" : role === "affiliate" ? "affiliate" : "owner"}
+          userName={user.name}
+          onLogout={logout}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+        {role === "admin" && (
+          <AdminDashboard
+            affiliates={affiliates}
+            setAffiliates={setAffiliates}
+            events={events}
+            moi={moi}
+          />
+        )}
+        {role === "affiliate" && (
+          <AffiliateDashboard
+            events={events}
+            setEvents={setEvents}
+            moi={moi}
+            setMoi={setMoi}
+          />
+        )}
+        {role === "user" && <WriterView />}
+        {!["admin", "affiliate", "user"].includes(role) && (
+          <div style={{ padding: 40, textAlign: "center" }}>
+            <div style={{ fontSize: 18, color: "var(--muted)" }}>Unknown role: {roleDisplay}</div>
+          </div>
+        )}
       </div>
     </>
   );

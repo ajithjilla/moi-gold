@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  AFFILIATE
+  USER
+}
+
+enum Plan {
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum AffiliateStatus {
+  ACTIVE
+  PENDING
+  EXPIRED
+}
+
+enum EventType {
+  WEDDING
+  ENGAGEMENT
+  EAR
+  CRADLE
+  HOUSEWARMING
+  BIRTHDAY
+}
+
+enum EventStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+enum PaymentMethod {
+  CASH
+  GPAY
+  PHONEPE
+  PAYTM
+  NEFT
+  CHEQUE
+}
+
+model User {
+  id            String      @id @default(uuid())
+  name          String
+  phone         String      @unique
+  email         String?     @unique
+  password_hash String
+  role          Role        @default(USER)
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+
+  affiliate     Affiliate?
+  eventWriters  EventWriter[]
+  moiEntries    MoiEntry[]  @relation("WrittenBy")
+
+  @@map("users")
+}
+
+model Affiliate {
+  id        String          @id @default(uuid())
+  user_id   String          @unique
+  plan      Plan            @default(BASIC)
+  status    AffiliateStatus @default(PENDING)
+  revenue   Float           @default(0)
+  join_date DateTime        @default(now())
+
+  user   User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  events Event[]
+
+  @@map("affiliates")
+}
+
+model Event {
+  id                    String      @id @default(uuid())
+  name                  String
+  type                  EventType
+  date                  DateTime
+  venue                 String
+  owner_name            String
+  owner_phone           String
+  owner_email           String?
+  affiliate_id          String
+  status                EventStatus @default(UPCOMING)
+  writer_access_enabled Boolean     @default(false)
+  created_at            DateTime    @default(now())
+  updated_at            DateTime    @updatedAt
+
+  affiliate   Affiliate     @relation(fields: [affiliate_id], references: [id], onDelete: Cascade)
+  writers     EventWriter[]
+  moi_entries MoiEntry[]
+
+  @@map("events")
+}
+
+model EventWriter {
+  id          String   @id @default(uuid())
+  event_id    String
+  user_id     String
+  assigned_by String
+  assigned_at DateTime @default(now())
+
+  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([event_id, user_id])
+  @@map("event_writers")
+}
+
+model MoiEntry {
+  id             String        @id @default(uuid())
+  event_id       String
+  giver_name     String
+  amount         Float
+  phone          String?
+  address        String?
+  relation       String?
+  method         PaymentMethod @default(CASH)
+  note           String?
+  voided         Boolean       @default(false)
+  denoms         Json?
+  written_by_id  String?
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+
+  event      Event  @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  written_by User?  @relation("WrittenBy", fields: [written_by_id], references: [id], onDelete: SetNull)
+
+  @@map("moi_entries")
+}
