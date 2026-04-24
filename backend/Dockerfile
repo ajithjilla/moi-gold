@@ -29,4 +29,5 @@ EXPOSE 4000
 
 # No committed migrations yet — `db push` syncs schema. Switch to `migrate deploy`
 # after you add prisma/migrations (e.g. `npx prisma migrate dev` locally).
-CMD ["sh", "-c", "npx prisma db push && node src/index.js"]
+# Use --force-reset to clear DB on schema incompatibility (safe for fresh Docker builds + seed).
+CMD ["sh", "-c", "npx prisma db push --force-reset && node src/index.js"]
