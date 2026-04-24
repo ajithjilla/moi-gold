@@ -23,6 +23,7 @@ enum AffiliateStatus {
   ACTIVE
   PENDING
   EXPIRED
+  SUSPENDED
 }
 
 enum EventType {
@@ -32,12 +33,14 @@ enum EventType {
   CRADLE
   HOUSEWARMING
   BIRTHDAY
+  OTHER
 }
 
 enum EventStatus {
   UPCOMING
   ACTIVE
   COMPLETED
+  CANCELLED
 }
 
 enum PaymentMethod {
@@ -47,6 +50,7 @@ enum PaymentMethod {
   PAYTM
   NEFT
   CHEQUE
+  OTHER
 }
 
 model User {
@@ -56,13 +60,16 @@ model User {
   email         String?     @unique
   password_hash String
   role          Role        @default(USER)
+  active        Boolean     @default(true)
   created_at    DateTime    @default(now())
   updated_at    DateTime    @updatedAt
 
   affiliate     Affiliate?
   eventWriters  EventWriter[]
   moiEntries    MoiEntry[]  @relation("WrittenBy")
+  auditLogs     AuditLog[]
 
+  @@index([role])
   @@map("users")
 }
 
@@ -73,10 +80,12 @@ model Affiliate {
   status    AffiliateStatus @default(PENDING)
   revenue   Float           @default(0)
   join_date DateTime        @default(now())
+  notes     String?
 
   user   User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
   events Event[]
 
+  @@index([status])
   @@map("affiliates")
 }
 
@@ -92,6 +101,8 @@ model Event {
   affiliate_id          String
   status                EventStatus @default(UPCOMING)
   writer_access_enabled Boolean     @default(false)
+  share_token           String      @unique @default(cuid())
+  share_enabled         Boolean     @default(false)
   created_at            DateTime    @default(now())
   updated_at            DateTime    @updatedAt
 
@@ -99,6 +110,9 @@ model Event {
   writers     EventWriter[]
   moi_entries MoiEntry[]
 
+  @@index([affiliate_id])
+  @@index([status])
+  @@index([date])
   @@map("events")
 }
 
@@ -127,6 +141,8 @@ model MoiEntry {
   method         PaymentMethod @default(CASH)
   note           String?
   voided         Boolean       @default(false)
+  voided_at      DateTime?
+  voided_by_id   String?
   denoms         Json?
   written_by_id  String?
   created_at     DateTime      @default(now())
@@ -135,5 +151,34 @@ model MoiEntry {
   event      Event  @relation(fields: [event_id], references: [id], onDelete: Cascade)
   written_by User?  @relation("WrittenBy", fields: [written_by_id], references: [id], onDelete: SetNull)
 
+  @@index([event_id])
+  @@index([written_by_id])
+  @@index([created_at])
   @@map("moi_entries")
+}
+
+model Setting {
+  key        String   @id
+  value      String
+  updated_at DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actor_id   String?
+  action     String
+  entity     String
+  entity_id  String?
+  metadata   Json?
+  ip         String?
+  created_at DateTime @default(now())
+
+  actor User? @relation(fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@index([actor_id])
+  @@index([entity, entity_id])
+  @@index([created_at])
+  @@map("audit_logs")
 }

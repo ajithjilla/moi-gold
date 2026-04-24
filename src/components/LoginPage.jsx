@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext.jsx";
+import { useAuth } from "../context/useAuth.js";
 import { useLanguage } from "../context/useLanguage.js";
 import LanguageToggle from "./LanguageToggle.jsx";
+import { Gift, BarChart3, Printer, Globe2, Phone, Lock, ArrowRight } from "lucide-react";
+import ErrorBanner from "./ui/ErrorBanner.jsx";
 
 const FEATURES = [
-  { icon: "💍", titleKey: "loginFeatures.0.title", subKey: "loginFeatures.0.sub" },
-  { icon: "📊", titleKey: "loginFeatures.1.title", subKey: "loginFeatures.1.sub" },
-  { icon: "🖨️", titleKey: "loginFeatures.2.title", subKey: "loginFeatures.2.sub" },
-  { icon: "🌐", titleKey: "loginFeatures.3.title", subKey: "loginFeatures.3.sub" },
+  { icon: Gift, titleKey: "loginFeatures.0.title", subKey: "loginFeatures.0.sub" },
+  { icon: BarChart3, titleKey: "loginFeatures.1.title", subKey: "loginFeatures.1.sub" },
+  { icon: Printer, titleKey: "loginFeatures.2.title", subKey: "loginFeatures.2.sub" },
+  { icon: Globe2, titleKey: "loginFeatures.3.title", subKey: "loginFeatures.3.sub" },
 ];
 
 export default function LoginPage() {
@@ -18,93 +20,100 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!phone || !pass) { setError("Phone and password are required"); return; }
+  const handleLogin = async (e) => {
+    e?.preventDefault?.();
+    if (!phone || !pass) {
+      setError(t("login.errorMissing") || "Phone and password are required");
+      return;
+    }
     setError("");
     setLoading(true);
     try {
-      await login({ phone, password: pass });
+      await login({ phone: phone.trim(), password: pass });
     } catch (err) {
-      setError(err.message || "Login failed");
+      setError(err.message || t("login.errorFailed") || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKey = (e) => { if (e.key === "Enter") handleLogin(); };
-
   return (
-    <div className="login-page pattern-bg">
-      <div className="login-lang" style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+    <div className="login-shell">
+      <div style={{ position: "absolute", top: 20, right: 24, zIndex: 2 }}>
         <LanguageToggle />
       </div>
 
-      <div className="login-left">
-        <div className="login-brand">
-          <div className="login-logo-big">M</div>
-          <div className="login-app-name">மொய்<br />Moi Tech</div>
-          <div className="login-tagline">{t("login.tagline")}</div>
-        </div>
+      <div className="login-hero">
+        <div className="login-hero-logo">M</div>
+        <h1>{t("nav.brandTitle") || "Moi Tech"}</h1>
+        <p>{t("login.tagline") || "A modern event-gift management system for affiliates, writers, and event owners."}</p>
         <div className="login-features">
           {FEATURES.map((f, i) => (
             <div className="login-feature" key={i}>
-              <div className="feature-icon">{f.icon}</div>
+              <div className="login-feature-icon">
+                <f.icon size={18} />
+              </div>
               <div>
-                <div className="feature-text-title">{t(f.titleKey)}</div>
-                <div className="feature-text-sub">{t(f.subKey)}</div>
+                <div className="login-feature-title">{t(f.titleKey)}</div>
+                <div className="login-feature-desc">{t(f.subKey)}</div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="login-right" style={{ background: "rgba(26,10,0,0.2)", backdropFilter: "blur(10px)" }}>
-        <div className="login-card">
-          <div className="login-card-title">{t("login.welcomeBack")}</div>
-          <div className="login-card-sub">{t("login.signInSub")}</div>
+      <div className="login-right">
+        <form className="login-card" onSubmit={handleLogin}>
+          <h2>{t("login.welcomeBack") || "Welcome back"}</h2>
+          <p className="sub">{t("login.signInSub") || "Sign in with your phone number and password."}</p>
 
-          {error && (
-            <div style={{ background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.3)", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#dc2626", marginBottom: 16 }}>
-              {error}
-            </div>
-          )}
+          {error && <ErrorBanner message={error} onDismiss={() => setError("")} />}
 
           <div className="form-group mb-3">
-            <label>{t("login.phone") || "Phone Number"}</label>
+            <label>
+              <Phone size={12} style={{ verticalAlign: "text-bottom", marginRight: 4 }} />
+              {t("login.phone") || "Phone Number"}
+            </label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="Enter mobile number"
-              onKeyDown={handleKey}
+              placeholder="e.g. 9000000000"
               autoComplete="tel"
+              autoFocus
+              disabled={loading}
             />
           </div>
           <div className="form-group mb-4">
-            <label>{t("login.password")}</label>
+            <label>
+              <Lock size={12} style={{ verticalAlign: "text-bottom", marginRight: 4 }} />
+              {t("login.password") || "Password"}
+            </label>
             <input
               type="password"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
-              placeholder={t("login.passwordPh")}
-              onKeyDown={handleKey}
+              placeholder={t("login.passwordPh") || "Your password"}
               autoComplete="current-password"
+              disabled={loading}
             />
           </div>
 
-          <button
-            className="btn btn-primary"
-            style={{ width: "100%", justifyContent: "center", padding: "12px" }}
-            onClick={handleLogin}
-            disabled={loading}
-          >
-            {loading ? "Signing in..." : t("login.signIn")}
+          <button className="btn btn-primary btn-lg btn-block" type="submit" disabled={loading}>
+            {loading ? t("login.signingIn") || "Signing in…" : (
+              <>
+                {t("login.signIn") || "Sign In"} <ArrowRight size={16} />
+              </>
+            )}
           </button>
 
-          <div style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "var(--muted)" }}>
-            {t("login.needAccount")} <strong style={{ color: "var(--gold-dark)" }}>admin@moitech.in</strong>
+          <div className="login-hint">
+            <strong>{t("login.demoTitle") || "Demo accounts"}</strong>
+            <div>Admin: <code>9000000000 / admin123</code></div>
+            <div>Affiliate: <code>9811234567 / ravi123</code></div>
+            <div>Writer: <code>9876500001 / writer123</code></div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

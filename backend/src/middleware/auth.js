@@ -1,30 +1,38 @@
 const jwt = require("jsonwebtoken");
 const prisma = require("../lib/prisma");
+const { unauthorized, forbidden } = require("../lib/errors");
+const env = require("../lib/env");
 
-const authenticate = async (req, res, next) => {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "No token provided" });
-  }
-  const token = header.slice(7);
+const authenticate = async (req, _res, next) => {
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const header = req.headers.authorization;
+    if (!header || !header.startsWith("Bearer ")) return next(unauthorized("No token provided"));
+
+    const token = header.slice(7);
+    let payload;
+    try {
+      payload = jwt.verify(token, env.JWT_SECRET);
+    } catch {
+      return next(unauthorized("Invalid or expired token"));
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       include: { affiliate: true },
     });
-    if (!user) return res.status(401).json({ error: "User not found" });
+    if (!user) return next(unauthorized("User not found"));
+    if (user.active === false) return next(forbidden("Account has been disabled"));
+
     req.user = user;
     next();
-  } catch {
-    return res.status(401).json({ error: "Invalid or expired token" });
+  } catch (err) {
+    next(err);
   }
 };
 
-const requireRole = (...roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
+const requireRole = (...roles) => (req, _res, next) => {
+  if (!req.user) return next(unauthorized());
+  if (!roles.includes(req.user.role)) return next(forbidden());
   next();
 };
 

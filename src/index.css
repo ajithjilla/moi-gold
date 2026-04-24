@@ -1,6 +1,1 @@
-/* Reset - main styles in styles/main.css */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* Reserved for project-wide overrides. See main.css for the design system. */

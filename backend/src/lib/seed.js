@@ -1,12 +1,29 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const prisma = require("./prisma");
+const env = require("./env");
+
+const defaultSettings = {
+  app_name: "Moi Tech",
+  brand_title: "Moi Tech",
+  brand_subtitle: "Moi Management System",
+  support_email: "admin@moitech.in",
+  welcome_message_ta: "வாழ்த்துக்கள்! உங்கள் மொய் பட்டியல் புதுப்பிக்கப்பட்டது.",
+  footer_note: "Powered by Moi Tech",
+};
 
 async function main() {
   console.log("Seeding database...");
 
-  // 1. Admin user
-  const adminHash = await bcrypt.hash("admin123", 10);
+  for (const [key, value] of Object.entries(defaultSettings)) {
+    await prisma.setting.upsert({
+      where: { key },
+      update: {},
+      create: { key, value },
+    });
+  }
+
+  const adminHash = await bcrypt.hash("admin123", env.BCRYPT_ROUNDS);
   const admin = await prisma.user.upsert({
     where: { phone: "9000000000" },
     update: {},
@@ -20,8 +37,7 @@ async function main() {
   });
   console.log("Admin:", admin.email);
 
-  // 2. Affiliate user 1
-  const aff1Hash = await bcrypt.hash("ravi123", 10);
+  const aff1Hash = await bcrypt.hash("ravi123", env.BCRYPT_ROUNDS);
   const affUser1 = await prisma.user.upsert({
     where: { phone: "9811234567" },
     update: {},
@@ -38,10 +54,8 @@ async function main() {
     update: {},
     create: { user_id: affUser1.id, plan: "PRO", status: "ACTIVE", revenue: 3600 },
   });
-  console.log("Affiliate 1:", affUser1.email);
 
-  // 3. Affiliate user 2
-  const aff2Hash = await bcrypt.hash("prabha123", 10);
+  const aff2Hash = await bcrypt.hash("prabha123", env.BCRYPT_ROUNDS);
   const affUser2 = await prisma.user.upsert({
     where: { phone: "9822345678" },
     update: {},
@@ -59,8 +73,7 @@ async function main() {
     create: { user_id: affUser2.id, plan: "BASIC", status: "ACTIVE", revenue: 1500 },
   });
 
-  // 4. Writer users
-  const writerHash = await bcrypt.hash("writer123", 10);
+  const writerHash = await bcrypt.hash("writer123", env.BCRYPT_ROUNDS);
   const writer1 = await prisma.user.upsert({
     where: { phone: "9876500001" },
     update: {},
@@ -72,7 +85,6 @@ async function main() {
     create: { name: "Priya D", phone: "9876500002", password_hash: writerHash, role: "USER" },
   });
 
-  // 5. Events for affiliate 1
   const event1 = await prisma.event.upsert({
     where: { id: "event-seed-1" },
     update: {},
@@ -88,6 +100,7 @@ async function main() {
       affiliate_id: affiliate1.id,
       status: "COMPLETED",
       writer_access_enabled: true,
+      share_enabled: true,
     },
   });
   const event2 = await prisma.event.upsert({
@@ -104,11 +117,11 @@ async function main() {
       owner_email: "rajesh@gmail.com",
       affiliate_id: affiliate1.id,
       status: "ACTIVE",
-      writer_access_enabled: false,
+      writer_access_enabled: true,
+      share_enabled: false,
     },
   });
 
-  // 6. Assign writers to events
   await prisma.eventWriter.upsert({
     where: { event_id_user_id: { event_id: event1.id, user_id: writer1.id } },
     update: {},
@@ -125,7 +138,6 @@ async function main() {
     create: { event_id: event2.id, user_id: writer2.id, assigned_by: affUser1.id },
   });
 
-  // 7. Moi entries
   const moiData = [
     { id: "moi-seed-1", event_id: event1.id, giver_name: "Anbu Selvan", amount: 2000, phone: "9876501234", address: "12, Anna Nagar, Chennai", relation: "Uncle", method: "CASH", note: "Blessings", denoms: { "500": 4 }, written_by_id: writer1.id },
     { id: "moi-seed-2", event_id: event1.id, giver_name: "Muthu Lakshmi", amount: 5000, phone: "9865430012", address: "5, Gandhi St, Madurai", relation: "Friend", method: "GPAY", written_by_id: writer2.id },
@@ -149,5 +161,8 @@ async function main() {
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

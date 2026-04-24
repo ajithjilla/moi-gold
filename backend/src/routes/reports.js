@@ -1,26 +1,31 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
 const { authenticate, requireRole } = require("../middleware/auth");
+const asyncHandler = require("../lib/asyncHandler");
+const { forbidden, notFound } = require("../lib/errors");
 
 const router = express.Router({ mergeParams: true });
 router.use(authenticate, requireRole("AFFILIATE", "ADMIN"));
 
 const DENOMS = [500, 200, 100, 50, 20, 10, 5, 2, 1];
 
-const getOwnedEvent = async (affiliateId, eventId, isAdmin) => {
+const getOwnedEvent = async (req) => {
+  const where =
+    req.user.role === "ADMIN"
+      ? { id: req.params.eventId }
+      : { id: req.params.eventId, affiliate_id: req.user.affiliate?.id };
   return prisma.event.findFirst({
-    where: isAdmin ? { id: eventId } : { id: eventId, affiliate_id: affiliateId },
-    include: { affiliate: { include: { user: { select: { name: true } } } } },
+    where,
+    include: { affiliate: { include: { user: { select: { name: true, phone: true } } } } },
   });
 };
 
-// GET /api/events/:eventId/settlement
-router.get("/settlement", async (req, res) => {
-  const isAdmin = req.user.role === "ADMIN";
-  const event = await getOwnedEvent(req.user.affiliate?.id, req.params.eventId, isAdmin);
-  if (!event) return res.status(403).json({ error: "Event not found or access denied" });
+router.get(
+  "/settlement",
+  asyncHandler(async (req, res) => {
+    const event = await getOwnedEvent(req);
+    if (!event) throw forbidden("Event not found or access denied");
 
-  try {
     const entries = await prisma.moiEntry.findMany({
       where: { event_id: req.params.eventId, voided: false },
       select: { amount: true, method: true, denoms: true },
@@ -32,7 +37,6 @@ router.get("/settlement", async (req, res) => {
     const digitalTotal = digitalEntries.reduce((s, e) => s + e.amount, 0);
     const grandTotal = cashTotal + digitalTotal;
 
-    // Aggregate denominations across all cash entries
     const denomAgg = {};
     cashEntries.forEach((e) => {
       if (e.denoms && typeof e.denoms === "object") {
@@ -43,7 +47,6 @@ router.get("/settlement", async (req, res) => {
       }
     });
 
-    // Method breakdown for digital
     const methodMap = {};
     digitalEntries.forEach((e) => {
       if (!methodMap[e.method]) methodMap[e.method] = { count: 0, total: 0 };
@@ -52,7 +55,7 @@ router.get("/settlement", async (req, res) => {
     });
 
     res.json({
-      event: { id: event.id, name: event.name, date: event.date },
+      event: { id: event.id, name: event.name, date: event.date, venue: event.venue },
       grandTotal,
       cashTotal,
       digitalTotal,
@@ -62,40 +65,75 @@ router.get("/settlement", async (req, res) => {
       denomBreakdown: denomAgg,
       methodBreakdown: methodMap,
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  })
+);
 
-// GET /api/events/:eventId/report  — full data for PDF generation
-router.get("/report", async (req, res) => {
-  const isAdmin = req.user.role === "ADMIN";
-  const event = await getOwnedEvent(req.user.affiliate?.id, req.params.eventId, isAdmin);
-  if (!event) return res.status(403).json({ error: "Event not found or access denied" });
+router.get(
+  "/report",
+  asyncHandler(async (req, res) => {
+    const event = await getOwnedEvent(req);
+    if (!event) throw forbidden("Event not found or access denied");
 
-  try {
     const entries = await prisma.moiEntry.findMany({
       where: { event_id: req.params.eventId },
       include: { written_by: { select: { id: true, name: true, phone: true } } },
       orderBy: { created_at: "asc" },
     });
 
-    const activeEntries = entries.filter((e) => !e.voided);
-    const totalAmount = activeEntries.reduce((s, e) => s + e.amount, 0);
+    const active = entries.filter((e) => !e.voided);
+    const totalAmount = active.reduce((s, e) => s + e.amount, 0);
 
     res.json({
       event,
       entries,
       summary: {
-        totalEntries: activeEntries.length,
-        voidedEntries: entries.filter((e) => e.voided).length,
+        totalEntries: active.length,
+        voidedEntries: entries.length - active.length,
         totalAmount,
         generatedAt: new Date().toISOString(),
       },
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  })
+);
+
+router.get(
+  "/export.csv",
+  asyncHandler(async (req, res) => {
+    const event = await getOwnedEvent(req);
+    if (!event) throw forbidden("Event not found or access denied");
+    const entries = await prisma.moiEntry.findMany({
+      where: { event_id: req.params.eventId, voided: false },
+      include: { written_by: { select: { name: true, phone: true } } },
+      orderBy: { created_at: "asc" },
+    });
+    const esc = (v) => {
+      if (v === null || v === undefined) return "";
+      const s = String(v).replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const rows = [
+      ["#", "Giver", "Amount", "Phone", "Address", "Relation", "Method", "Note", "Written By", "Created"],
+      ...entries.map((e, i) => [
+        i + 1,
+        e.giver_name,
+        e.amount,
+        e.phone || "",
+        e.address || "",
+        e.relation || "",
+        e.method,
+        e.note || "",
+        e.written_by?.name || "",
+        e.created_at.toISOString(),
+      ]),
+    ];
+    const csv = rows.map((r) => r.map(esc).join(",")).join("\n");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="moi-${event.name.replace(/[^a-z0-9]+/gi, "-")}.csv"`
+    );
+    res.send(csv);
+  })
+);
 
 module.exports = router;

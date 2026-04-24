@@ -5,7 +5,11 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'moi-gold/**']),
+  globalIgnores([
+    'dist',
+    'backend/**',
+    'node_modules/**',
+  ]),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -24,6 +28,16 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // These rules are too strict for our data-loading patterns; effect-driven
+      // setState is intentional for async fetch flows and UI refs.
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+  {
+    files: ['vite.config.js', '*.config.js'],
+    languageOptions: {
+      globals: { ...globals.node },
     },
   },
 ])

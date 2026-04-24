@@ -13,7 +13,12 @@ function getValue(obj, path) {
   let cur = obj;
   for (const p of parts) {
     if (cur == null) return undefined;
-    cur = cur[p];
+    if (Array.isArray(cur)) {
+      const idx = Number(p);
+      cur = Number.isInteger(idx) ? cur[idx] : undefined;
+    } else {
+      cur = cur[p];
+    }
   }
   return cur;
 }
