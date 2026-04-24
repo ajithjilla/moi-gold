@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { DENOMS, PAYMENT_METHODS, denomTotal, emptyDenoms, fmt } from "../../../utils/helpers.js";
 
 const RELATIONS = ["Uncle", "Aunt", "Friend", "Colleague", "Neighbor", "Relative", "Brother", "Sister", "Other"];
@@ -33,18 +34,39 @@ export default function MoiEntryForm({ id, value, onSubmit }) {
   }, [value]);
 
   const denomSum = useMemo(() => denomTotal(state.denoms), [state.denoms]);
+  const denomMismatch =
+    state.method === "CASH" && showDenoms && denomSum > 0 && denomSum !== Number(state.amount);
 
   const submit = (e) => {
     e.preventDefault();
+    const amount = Number(state.amount);
+    if (!state.giver_name.trim()) {
+      toast.error("Giver name is required");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Amount must be greater than 0");
+      return;
+    }
+    const useDenoms = state.method === "CASH" && showDenoms && denomSum > 0;
+    if (useDenoms && denomSum !== amount) {
+      toast.error(`Denomination total (${fmt(denomSum)}) does not match amount (${fmt(amount)})`);
+      return;
+    }
+    const cleanedDenoms = useDenoms
+      ? Object.fromEntries(
+          Object.entries(state.denoms).filter(([, qty]) => Number(qty) > 0)
+        )
+      : null;
     const payload = {
       giver_name: state.giver_name.trim(),
-      amount: Number(state.amount),
+      amount,
       phone: state.phone?.trim() || null,
       address: state.address?.trim() || null,
       relation: state.relation || null,
       method: state.method,
       note: state.note?.trim() || null,
-      denoms: state.method === "CASH" && showDenoms ? state.denoms : null,
+      denoms: cleanedDenoms,
     };
     onSubmit(payload);
   };
@@ -162,9 +184,9 @@ export default function MoiEntryForm({ id, value, onSubmit }) {
                 <span>Denomination total</span>
                 <span>{fmt(denomSum)}</span>
               </div>
-              {denomSum !== Number(state.amount) && (
+              {denomMismatch && (
                 <div style={{ color: "var(--danger)", fontSize: 12, marginTop: 6 }}>
-                  Denomination total doesn't match amount.
+                  Denomination total {fmt(denomSum)} does not match amount {fmt(Number(state.amount))}.
                 </div>
               )}
             </>
