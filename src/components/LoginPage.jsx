@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth.js";
 import { useLanguage } from "../context/useLanguage.js";
 import LanguageToggle from "./LanguageToggle.jsx";
 import { Gift, BarChart3, Printer, Globe2, Phone, Lock, ArrowRight } from "lucide-react";
 import ErrorBanner from "./ui/ErrorBanner.jsx";
+import Spinner from "./ui/Spinner.jsx";
 
 const FEATURES = [
   { icon: Gift, titleKey: "loginFeatures.0.title", subKey: "loginFeatures.0.sub" },
@@ -12,13 +14,28 @@ const FEATURES = [
   { icon: Globe2, titleKey: "loginFeatures.3.title", subKey: "loginFeatures.3.sub" },
 ];
 
+const roleRoute = (role) => {
+  if (role === "ADMIN") return "/admin";
+  if (role === "AFFILIATE") return "/affiliate";
+  if (role === "USER") return "/writer";
+  return "/";
+};
+
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { user, login, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [phone, setPhone] = useState("");
   const [pass, setPass] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (authLoading) return <Spinner label={t("common.loading") || "Loading…"} />;
+  if (user) {
+    const to = location.state?.from?.pathname || roleRoute(user.role);
+    return <Navigate to={to} replace />;
+  }
 
   const handleLogin = async (e) => {
     e?.preventDefault?.();
@@ -29,7 +46,9 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await login({ phone: phone.trim(), password: pass });
+      const loggedUser = await login({ phone: phone.trim(), password: pass });
+      const target = location.state?.from?.pathname || roleRoute(loggedUser.role);
+      navigate(target, { replace: true });
     } catch (err) {
       setError(err.message || t("login.errorFailed") || "Login failed");
     } finally {

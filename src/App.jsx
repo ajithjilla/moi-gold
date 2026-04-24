@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { useAuth } from "./context/useAuth.js";
 import Spinner from "./components/ui/Spinner.jsx";
@@ -11,8 +11,9 @@ import NotFound from "./pages/NotFound.jsx";
 
 function RequireAuth({ role, children }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <Spinner label="Loading…" />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
   if (role && user.role !== role) {
     return <Navigate to={defaultRouteForRole(user.role)} replace />;
   }
