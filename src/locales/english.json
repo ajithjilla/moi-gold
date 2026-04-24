@@ -9,6 +9,7 @@
     "welcomeBack": "Welcome Back",
     "signInSub": "Sign in to your Moi Tech account",
     "demo": "Demo:",
+    "phone": "Phone Number",
     "email": "Email Address",
     "password": "Password",
     "emailPh": "Enter email",
@@ -25,6 +26,23 @@
     { "title": "Print & Export", "sub": "PDF reports for families at end of function" },
     { "title": "Tamil + English", "sub": "Bilingual interface for ease of use" }
   ],
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search",
+    "actions": "Actions",
+    "status": "Status",
+    "noData": "No data available",
+    "tryAgain": "Try again",
+    "notFound": "Not found"
+  },
   "nav": {
     "brandTitle": "Moi Tech",
     "brandSubtitle": "Moi Management System",

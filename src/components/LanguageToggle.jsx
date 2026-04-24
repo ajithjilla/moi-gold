@@ -1,15 +1,14 @@
 import { useLanguage } from "../context/useLanguage.js";
 
-export default function LanguageToggle({ className = "" }) {
-  const { locale, setLocale, t } = useLanguage();
+export default function LanguageToggle() {
+  const { locale, toggleLocale } = useLanguage();
   return (
-    <div className={`lang-toggle ${className}`.trim()} role="group" aria-label={t("lang.toggle")}>
-      <button type="button" className={locale === "en" ? "active" : ""} onClick={() => setLocale("en")}>
-        {t("lang.en")}
-      </button>
-      <button type="button" className={locale === "ta" ? "active" : ""} onClick={() => setLocale("ta")}>
-        {t("lang.ta")}
-      </button>
-    </div>
+    <button
+      className="lang-toggle"
+      onClick={toggleLocale}
+      title={locale === "ta" ? "Switch to English" : "தமிழுக்கு மாறவும்"}
+    >
+      {locale === "ta" ? "EN" : "தமிழ்"}
+    </button>
   );
 }

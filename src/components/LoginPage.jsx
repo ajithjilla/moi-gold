@@ -1,103 +1,138 @@
 import { useState } from "react";
-
-const ROLE_MAP = {
-  admin: { email: "admin@moitech.in", pass: "admin123" },
-  affiliate: { email: "ravi@gmail.com", pass: "ravi123" },
-  owner: { email: "murugan@gmail.com", pass: "owner123" },
-};
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth.js";
+import { useLanguage } from "../context/useLanguage.js";
+import LanguageToggle from "./LanguageToggle.jsx";
+import { Gift, BarChart3, Printer, Globe2, Phone, Lock, ArrowRight } from "lucide-react";
+import ErrorBanner from "./ui/ErrorBanner.jsx";
+import Spinner from "./ui/Spinner.jsx";
 
 const FEATURES = [
-  { icon: "💍", title: "All Functions Covered", sub: "Wedding, Engagement, Ear Piercing, Cradle & more" },
-  { icon: "📊", title: "Real-time Tracking", sub: "Event owners view gifts live on mobile" },
-  { icon: "🖨️", title: "Print & Export", sub: "PDF reports for families at end of function" },
-  { icon: "🌐", title: "Tamil + English", sub: "Bilingual interface for ease of use" },
+  { icon: Gift, titleKey: "loginFeatures.0.title", subKey: "loginFeatures.0.sub" },
+  { icon: BarChart3, titleKey: "loginFeatures.1.title", subKey: "loginFeatures.1.sub" },
+  { icon: Printer, titleKey: "loginFeatures.2.title", subKey: "loginFeatures.2.sub" },
+  { icon: Globe2, titleKey: "loginFeatures.3.title", subKey: "loginFeatures.3.sub" },
 ];
 
-const ROLES = [
-  ["admin", "🛡️ Admin"],
-  ["affiliate", "💼 Affiliate"],
-  ["owner", "📱 Event Owner"],
-];
+const roleRoute = (role) => {
+  if (role === "ADMIN") return "/admin";
+  if (role === "AFFILIATE") return "/affiliate";
+  if (role === "USER") return "/writer";
+  return "/";
+};
 
-export default function LoginPage({ onLogin }) {
-  const [role, setRole] = useState("affiliate");
-  const [email, setEmail] = useState("");
+export default function LoginPage() {
+  const { user, login, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [phone, setPhone] = useState("");
   const [pass, setPass] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    const demo = ROLE_MAP[role];
-    if (email === demo.email && pass === demo.pass) {
-      onLogin(role);
-    } else {
-      onLogin(role);
+  if (authLoading) return <Spinner label={t("common.loading") || "Loading…"} />;
+  if (user) {
+    const to = location.state?.from?.pathname || roleRoute(user.role);
+    return <Navigate to={to} replace />;
+  }
+
+  const handleLogin = async (e) => {
+    e?.preventDefault?.();
+    if (!phone || !pass) {
+      setError(t("login.errorMissing") || "Phone and password are required");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      const loggedUser = await login({ phone: phone.trim(), password: pass });
+      const target = location.state?.from?.pathname || roleRoute(loggedUser.role);
+      navigate(target, { replace: true });
+    } catch (err) {
+      setError(err.message || t("login.errorFailed") || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRoleClick = (r) => {
-    setRole(r);
-    setEmail(ROLE_MAP[r].email);
-    setPass(ROLE_MAP[r].pass);
-  };
-
   return (
-    <div className="login-page pattern-bg">
-      <div className="login-left">
-        <div className="login-brand">
-          <div className="login-logo-big">M</div>
-          <div className="login-app-name">மொய்<br />Moi Tech</div>
-          <div className="login-tagline">Digital Gift Tracking for Tamil Nadu Functions</div>
-        </div>
+    <div className="login-shell">
+      <div style={{ position: "absolute", top: 20, right: 24, zIndex: 2 }}>
+        <LanguageToggle />
+      </div>
+
+      <div className="login-hero">
+        <div className="login-hero-logo">M</div>
+        <h1>{t("nav.brandTitle") || "Moi Tech"}</h1>
+        <p>{t("login.tagline") || "A modern event-gift management system for affiliates, writers, and event owners."}</p>
         <div className="login-features">
           {FEATURES.map((f, i) => (
             <div className="login-feature" key={i}>
-              <div className="feature-icon">{f.icon}</div>
+              <div className="login-feature-icon">
+                <f.icon size={18} />
+              </div>
               <div>
-                <div className="feature-text-title">{f.title}</div>
-                <div className="feature-text-sub">{f.sub}</div>
+                <div className="login-feature-title">{t(f.titleKey)}</div>
+                <div className="login-feature-desc">{t(f.subKey)}</div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="login-right" style={{ background: "rgba(26,10,0,0.2)", backdropFilter: "blur(10px)" }}>
-        <div className="login-card">
-          <div className="login-card-title">Welcome Back</div>
-          <div className="login-card-sub">Sign in to your Moi Tech account</div>
+      <div className="login-right">
+        <form className="login-card" onSubmit={handleLogin}>
+          <h2>{t("login.welcomeBack") || "Welcome back"}</h2>
+          <p className="sub">{t("login.signInSub") || "Sign in with your phone number and password."}</p>
 
-          <div className="role-tabs">
-            {ROLES.map(([r, label]) => (
-              <button
-                key={r}
-                className={`role-tab ${role === r ? "active" : ""}`}
-                onClick={() => handleRoleClick(r)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ marginBottom: 24, background: "rgba(200,146,42,0.1)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "var(--gold-dark)" }}>
-            🔑 Demo: <strong>{ROLE_MAP[role].email}</strong> / <strong>{ROLE_MAP[role].pass}</strong>
-          </div>
+          {error && <ErrorBanner message={error} onDismiss={() => setError("")} />}
 
           <div className="form-group mb-3">
-            <label>Email Address</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter email" />
+            <label>
+              <Phone size={12} style={{ verticalAlign: "text-bottom", marginRight: 4 }} />
+              {t("login.phone") || "Phone Number"}
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="e.g. 9000000000"
+              autoComplete="tel"
+              autoFocus
+              disabled={loading}
+            />
           </div>
           <div className="form-group mb-4">
-            <label>Password</label>
-            <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Enter password" />
+            <label>
+              <Lock size={12} style={{ verticalAlign: "text-bottom", marginRight: 4 }} />
+              {t("login.password") || "Password"}
+            </label>
+            <input
+              type="password"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              placeholder={t("login.passwordPh") || "Your password"}
+              autoComplete="current-password"
+              disabled={loading}
+            />
           </div>
 
-          <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", padding: "12px" }} onClick={handleLogin}>
-            Sign In →
+          <button className="btn btn-primary btn-lg btn-block" type="submit" disabled={loading}>
+            {loading ? t("login.signingIn") || "Signing in…" : (
+              <>
+                {t("login.signIn") || "Sign In"} <ArrowRight size={16} />
+              </>
+            )}
           </button>
 
-          <div style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "var(--muted)" }}>
-            Need an account? Contact <strong style={{ color: "var(--gold-dark)" }}>admin@moitech.in</strong>
+          <div className="login-hint">
+            <strong>{t("login.demoTitle") || "Demo accounts"}</strong>
+            <div>Admin: <code>9000000000 / admin123</code></div>
+            <div>Affiliate: <code>9811234567 / ravi123</code></div>
+            <div>Writer: <code>9876500001 / writer123</code></div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
