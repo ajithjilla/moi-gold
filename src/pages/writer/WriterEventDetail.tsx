@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Edit2, Search } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Search, MessageCircle } from "lucide-react";
 import { writerApi, moiApi } from "../../api/client";
 import { fmt, fmtDate, fmtDateTime } from "../../utils/helpers";
 import Modal from "../../components/ui/Modal";
@@ -69,6 +69,19 @@ export default function WriterEventDetail() {
       toast.error(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const [sendingWa, setSendingWa] = useState<string | null>(null);
+  const sendWhatsApp = async (entryId: string, giverName: string) => {
+    setSendingWa(entryId);
+    try {
+      const res = await moiApi.sendWhatsApp(eventId, entryId);
+      toast.success(res.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to send WhatsApp message");
+    } finally {
+      setSendingWa(null);
     }
   };
 
@@ -147,7 +160,7 @@ export default function WriterEventDetail() {
                   <th>Method</th>
                   <th>When</th>
                   <th className="num">Amount</th>
-                  <th className="num">Edit</th>
+                  <th className="num">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -167,14 +180,27 @@ export default function WriterEventDetail() {
                       <span className="amount-tag">{fmt(e.amount)}</span>
                     </td>
                     <td className="num">
-                      <button
-                        className="btn btn-sm btn-ghost"
-                        onClick={() => setEditing(e)}
-                        disabled={!event.writer_access_enabled || e.voided}
-                        title={!event.writer_access_enabled ? "Access disabled" : "Edit"}
-                      >
-                        <Edit2 size={12} />
-                      </button>
+                      <div style={{ display: "inline-flex", gap: 4 }}>
+                        {e.phone && (
+                          <button
+                            className="btn btn-sm btn-ghost"
+                            onClick={() => sendWhatsApp(e.id, e.giver_name)}
+                            disabled={sendingWa === e.id}
+                            title={`Send WhatsApp to ${e.giver_name}`}
+                            style={{ color: "#25D366" }}
+                          >
+                            <MessageCircle size={12} />
+                          </button>
+                        )}
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => setEditing(e)}
+                          disabled={!event.writer_access_enabled || e.voided}
+                          title={!event.writer_access_enabled ? "Access disabled" : "Edit"}
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
