@@ -21,7 +21,7 @@ A production-ready full-stack application for managing Moi (gift cash) at weddin
 cp backend/.env.example backend/.env      # fill in JWT_SECRET etc.
 # edit .env vars — at minimum set a 32+ character JWT_SECRET
 export JWT_SECRET="$(openssl rand -hex 32)"
-
+docker compose down -v   
 docker compose up --build
 ```
 

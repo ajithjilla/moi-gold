@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { affiliateApi, moiApi, reportsApi } from "../../api/client";
 import { fmt, fmtDate, fmtDateTime } from "../../utils/helpers";
+import { MessageCircle } from "lucide-react";
 import Modal from "../../components/ui/Modal";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import Spinner from "../../components/ui/Spinner";
@@ -211,6 +212,19 @@ export default function EventDetail() {
     const url = `${window.location.origin}/share/${event.share_token}`;
     navigator.clipboard.writeText(url);
     toast.success("Share link copied");
+  };
+
+  const [sendingWa, setSendingWa] = useState<string | null>(null);
+  const sendWhatsApp = async (entryId: string, giverName: string) => {
+    setSendingWa(entryId);
+    try {
+      const res = await moiApi.sendWhatsApp(eventId, entryId);
+      toast.success(res.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to send WhatsApp message");
+    } finally {
+      setSendingWa(null);
+    }
   };
 
   if (loading) return <Spinner />;
@@ -421,6 +435,17 @@ export default function EventDetail() {
                               {e.voided && (
                                 <button className="btn btn-sm btn-ghost" onClick={() => restoreEntry(e)} title="Restore">
                                   <Undo2 size={12} />
+                                </button>
+                              )}
+                              {e.phone && (
+                                <button
+                                  className="btn btn-sm btn-ghost"
+                                  onClick={() => sendWhatsApp(e.id, e.giver_name)}
+                                  disabled={sendingWa === e.id}
+                                  title={`Send WhatsApp to ${e.giver_name}`}
+                                  style={{ color: "#25D366" }}
+                                >
+                                  <MessageCircle size={12} />
                                 </button>
                               )}
                               <button

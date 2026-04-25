@@ -198,6 +198,10 @@ export const moiApi = {
     api.patch<MoiEntry>(`/api/events/${eventId}/moi/${entryId}/restore`),
   remove: (eventId: string, entryId: string) =>
     api.delete<{ message: string }>(`/api/events/${eventId}/moi/${entryId}`),
+  sendWhatsApp: (eventId: string, entryId: string) =>
+    api.post<{ message: string; wa_message_id: string | null }>(
+      `/api/events/${eventId}/moi/${entryId}/whatsapp`
+    ),
 };
 
 // ─── Reports ───────────────────────────────────────────────

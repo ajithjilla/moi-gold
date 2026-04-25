@@ -134,4 +134,102 @@ router.delete(
   })
 );
 
+// ─── WhatsApp thank-you message ─────────────────────────────
+const buildDefaultMessage = (giver, amount, event) =>
+  `Vanakkam ${giver},\n\nThank you for your generous gift of ₹${Number(amount).toLocaleString("en-IN")} at "${event}".\nYour support means a lot to us!\n\n— Moi Tech`;
+
+const buildMessage = (template, giver, amount, event) => {
+  if (!template) return buildDefaultMessage(giver, amount, event);
+  return template
+    .replace(/\{giver\}/g, giver)
+    .replace(/\{amount\}/g, `₹${Number(amount).toLocaleString("en-IN")}`)
+    .replace(/\{event\}/g, event);
+};
+
+const normalizePhone = (phone) => {
+  const digits = phone.replace(/[^0-9]/g, "");
+  if (digits.length < 7) return null;
+  return digits.startsWith("91") ? digits : `91${digits}`;
+};
+
+router.post(
+  "/:entryId/whatsapp",
+  asyncHandler(async (req, res) => {
+    const { access } = await getEventAccess(req.params.eventId, req.user);
+    if (!access) throw forbidden("Access denied");
+
+    const entry = await prisma.moiEntry.findFirst({
+      where: { id: req.params.entryId, event_id: req.params.eventId },
+    });
+    if (!entry) throw notFound("Entry not found");
+    if (!entry.phone) {
+      return res.status(400).json({ error: "This entry has no phone number" });
+    }
+
+    const event = await prisma.event.findUnique({ where: { id: req.params.eventId } });
+    if (!event) throw notFound("Event not found");
+
+    const settingsRows = await prisma.setting.findMany({
+      where: {
+        key: {
+          in: [
+            "whatsapp_access_token",
+            "whatsapp_phone_number_id",
+            "whatsapp_msg_template",
+          ],
+        },
+      },
+    });
+    const cfg = Object.fromEntries(settingsRows.map((r) => [r.key, r.value]));
+
+    if (!cfg.whatsapp_access_token || !cfg.whatsapp_phone_number_id) {
+      return res.status(400).json({
+        error: "WhatsApp Business API is not configured. Ask your admin to set it up in Settings.",
+      });
+    }
+
+    const to = normalizePhone(entry.phone);
+    if (!to) {
+      return res.status(400).json({ error: "Invalid phone number on this entry" });
+    }
+
+    const text = buildMessage(
+      cfg.whatsapp_msg_template,
+      entry.giver_name,
+      entry.amount,
+      event.name
+    );
+
+    const waRes = await fetch(
+      `https://graph.facebook.com/v21.0/${cfg.whatsapp_phone_number_id}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${cfg.whatsapp_access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to,
+          type: "text",
+          text: { body: text },
+        }),
+      }
+    );
+
+    const waData = await waRes.json().catch(() => ({}));
+
+    if (!waRes.ok) {
+      const msg =
+        waData?.error?.message || `WhatsApp API returned ${waRes.status}`;
+      return res.status(502).json({ error: msg, wa_status: waRes.status });
+    }
+
+    res.json({
+      message: `WhatsApp message sent to ${entry.giver_name}`,
+      wa_message_id: waData?.messages?.[0]?.id || null,
+    });
+  })
+);
+
 module.exports = router;
