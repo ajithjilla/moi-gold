@@ -9,8 +9,10 @@ import Spinner from "../../components/ui/Spinner";
 import Empty from "../../components/ui/Empty";
 import ErrorBanner from "../../components/ui/ErrorBanner";
 import MoiEntryForm from "../affiliate/components/MoiEntryForm";
+import { useLanguage } from "../../context/useLanguage";
 
 export default function WriterEventDetail() {
+  const { t } = useLanguage();
   const { eventId } = useParams();
   const navigate = useNavigate();
 
@@ -34,11 +36,11 @@ export default function WriterEventDetail() {
       setEntries(m.entries || []);
       setErr("");
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setErr(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, t]);
 
   useEffect(() => {
     load();
@@ -48,11 +50,11 @@ export default function WriterEventDetail() {
     setSaving(true);
     try {
       await moiApi.create(eventId, payload);
-      toast.success("Entry added");
+      toast.success(t("eventDetail.toastEntryAdded"));
       setAddOpen(false);
       load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
@@ -62,31 +64,31 @@ export default function WriterEventDetail() {
     setSaving(true);
     try {
       await moiApi.update(eventId, editing.id, payload);
-      toast.success("Entry updated");
+      toast.success(t("eventDetail.toastEntryUpdated"));
       setEditing(null);
       load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
   };
 
   const [sendingWa, setSendingWa] = useState<string | null>(null);
-  const sendWhatsApp = async (entryId: string, giverName: string) => {
+  const sendWhatsApp = async (entryId: string, _giverName: string) => {
     setSendingWa(entryId);
     try {
       const res = await moiApi.sendWhatsApp(eventId, entryId);
       toast.success(res.message);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to send WhatsApp message");
+      toast.error(e instanceof Error ? e.message : t("writerEvent.whatsappFailed"));
     } finally {
       setSendingWa(null);
     }
   };
 
   if (loading) return <Spinner />;
-  if (!event) return <ErrorBanner message={err || "Event not found"} />;
+  if (!event) return <ErrorBanner message={err || t("eventDetail.eventNotFound")} />;
 
   const filtered = entries.filter(
     (e) =>
@@ -100,7 +102,7 @@ export default function WriterEventDetail() {
       <div className="page-header">
         <div>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate("/writer")}>
-            <ArrowLeft size={14} /> Back
+            <ArrowLeft size={14} /> {t("eventDetail.back")}
           </button>
           <div className="page-title" style={{ marginTop: 8 }}>{event.name}</div>
           <div className="page-sub">
@@ -112,21 +114,19 @@ export default function WriterEventDetail() {
           onClick={() => setAddOpen(true)}
           disabled={!event.writer_access_enabled}
         >
-          <Plus size={14} /> Add Moi
+          <Plus size={14} /> {t("writerEvent.addMoi")}
         </button>
       </div>
 
-      {!event.writer_access_enabled && (
-        <ErrorBanner message="Writer recording is currently disabled for this event." />
-      )}
+      {!event.writer_access_enabled && <ErrorBanner message={t("writerEvent.disabledBanner")} />}
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-label">My entries</div>
+          <div className="stat-label">{t("writerEvent.myEntries")}</div>
           <div className="stat-value">{stats?.myCount || 0}</div>
         </div>
         <div className="stat-card success">
-          <div className="stat-label">My total</div>
+          <div className="stat-label">{t("writerEvent.myTotal")}</div>
           <div className="stat-value">{fmt(stats?.myTotal || 0)}</div>
         </div>
       </div>
@@ -134,33 +134,33 @@ export default function WriterEventDetail() {
       <div className="card">
         <div className="card-header">
           <div>
-            <div className="section-title">My Moi entries</div>
-            <div className="text-xs text-muted">You can only see and edit entries you recorded.</div>
+            <div className="section-title">{t("writerEvent.listTitle")}</div>
+            <div className="text-xs text-muted">{t("writerEvent.listHelp")}</div>
           </div>
           <div className="search-input" style={{ maxWidth: 280 }}>
             <Search size={16} />
             <input
               className="input"
-              placeholder="Search name or phone"
+              placeholder={t("writerEvent.searchPh")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
         </div>
         {filtered.length === 0 ? (
-          <Empty title="No entries yet" description="Tap ‘Add Moi’ to record the first entry." />
+          <Empty title={t("writerEvent.noEntries")} description={t("writerEvent.noEntriesHelp")} />
         ) : (
           <div className="table-wrap">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Giver</th>
-                  <th>Phone</th>
-                  <th>Method</th>
-                  <th>When</th>
-                  <th className="num">Amount</th>
-                  <th className="num">Actions</th>
+                  <th>{t("affiliate.thHash")}</th>
+                  <th>{t("eventDetail.giver")}</th>
+                  <th>{t("eventDetail.phone")}</th>
+                  <th>{t("affiliate.thMethod")}</th>
+                  <th>{t("eventDetail.when")}</th>
+                  <th className="num">{t("affiliate.thAmount")}</th>
+                  <th className="num">{t("common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -186,7 +186,7 @@ export default function WriterEventDetail() {
                             className="btn btn-sm btn-ghost"
                             onClick={() => sendWhatsApp(e.id, e.giver_name)}
                             disabled={sendingWa === e.id}
-                            title={`Send WhatsApp to ${e.giver_name}`}
+                            title={t("eventDetail.sendWhatsapp").replace("{name}", e.giver_name)}
                             style={{ color: "#25D366" }}
                           >
                             <MessageCircle size={12} />
@@ -196,7 +196,11 @@ export default function WriterEventDetail() {
                           className="btn btn-sm btn-ghost"
                           onClick={() => setEditing(e)}
                           disabled={!event.writer_access_enabled || e.voided}
-                          title={!event.writer_access_enabled ? "Access disabled" : "Edit"}
+                          title={
+                            !event.writer_access_enabled
+                              ? t("writerEvent.accessDisabled")
+                              : t("eventDetail.editTooltip")
+                          }
                         >
                           <Edit2 size={12} />
                         </button>
@@ -213,15 +217,15 @@ export default function WriterEventDetail() {
       <Modal
         open={addOpen}
         onClose={() => !saving && setAddOpen(false)}
-        title="Add Moi entry"
+        title={t("writerEvent.addModal")}
         wide
         footer={
           <>
             <button className="btn btn-ghost" onClick={() => setAddOpen(false)} disabled={saving}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button className="btn btn-primary" form="writer-moi-add" type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Add"}
+              {saving ? t("writerEvent.saving") : t("writerEvent.saveBtn")}
             </button>
           </>
         }
@@ -232,15 +236,15 @@ export default function WriterEventDetail() {
       <Modal
         open={!!editing}
         onClose={() => !saving && setEditing(null)}
-        title="Edit Moi entry"
+        title={t("writerEvent.editModal")}
         wide
         footer={
           <>
             <button className="btn btn-ghost" onClick={() => setEditing(null)} disabled={saving}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button className="btn btn-primary" form="writer-moi-edit" type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("writerEvent.saving") : t("eventDetail.saveEntry")}
             </button>
           </>
         }

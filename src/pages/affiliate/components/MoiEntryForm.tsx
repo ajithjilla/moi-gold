@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
 import { DENOMS, PAYMENT_METHODS, denomTotal, emptyDenoms, fmt } from "../../../utils/helpers";
+import { useLanguage } from "../../../context/useLanguage";
 import type { Denoms, MoiEntry, MoiEntryPayload, PaymentMethod } from "../../../types/domain";
 
 const RELATIONS = ["Uncle", "Aunt", "Friend", "Colleague", "Neighbor", "Relative", "Brother", "Sister", "Other"];
@@ -37,6 +38,7 @@ export default function MoiEntryForm({
   value?: Partial<MoiEntryPayload | MoiEntry> | null;
   onSubmit: (_payload: MoiEntryPayload) => void | Promise<void>;
 }) {
+  const { t } = useLanguage();
   const [state, setState] = useState<MoiEntryFormState>(emptyVal);
   const [showDenoms, setShowDenoms] = useState(false);
 
@@ -62,16 +64,18 @@ export default function MoiEntryForm({
     e.preventDefault();
     const amount = Number(state.amount);
     if (!state.giver_name.trim()) {
-      toast.error("Giver name is required");
+      toast.error(t("moiForm.giverRequired"));
       return;
     }
     if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error("Amount must be greater than 0");
+      toast.error(t("moiForm.amountInvalid"));
       return;
     }
     const useDenoms = state.method === "CASH" && showDenoms && denomSum > 0;
     if (useDenoms && denomSum !== amount) {
-      toast.error(`Denomination total (${fmt(denomSum)}) does not match amount (${fmt(amount)})`);
+      toast.error(
+        t("moiForm.denomMismatch").replace("{d}", fmt(denomSum)).replace("{a}", fmt(amount))
+      );
       return;
     }
     const cleanedDenoms = useDenoms
@@ -107,7 +111,7 @@ export default function MoiEntryForm({
     <form id={id} onSubmit={submit}>
       <div className="form-grid">
         <div className="form-group full">
-          <label>Gift giver name</label>
+          <label>{t("moiForm.giverLabel")}</label>
           <input
             value={state.giver_name}
             onChange={(e) => setState({ ...state, giver_name: e.target.value })}
@@ -116,7 +120,7 @@ export default function MoiEntryForm({
           />
         </div>
         <div className="form-group">
-          <label>Amount (₹)</label>
+          <label>{t("moiForm.amountLabel")}</label>
           <input
             type="number"
             min="0"
@@ -126,7 +130,7 @@ export default function MoiEntryForm({
           />
         </div>
         <div className="form-group">
-          <label>Payment method</label>
+          <label>{t("moiForm.paymentMethod")}</label>
           <select
             value={state.method}
             onChange={(e) => {
@@ -135,34 +139,34 @@ export default function MoiEntryForm({
               if (method !== "CASH") setShowDenoms(false);
             }}
           >
-            {PAYMENT_METHODS.map((m) => (
+            {PAYMENT_METHODS.map((m, i) => (
               <option key={m} value={m}>
-                {m}
+                {t(`paymentMethods.${i}`)}
               </option>
             ))}
           </select>
         </div>
         <div className="form-group">
-          <label>Phone</label>
+          <label>{t("moiForm.phone")}</label>
           <input value={state.phone || ""} onChange={(e) => setState({ ...state, phone: e.target.value })} />
         </div>
         <div className="form-group">
-          <label>Relation</label>
+          <label>{t("moiForm.relation")}</label>
           <select value={state.relation || ""} onChange={(e) => setState({ ...state, relation: e.target.value })}>
             <option value="">—</option>
-            {RELATIONS.map((r) => (
+            {RELATIONS.map((r, i) => (
               <option key={r} value={r}>
-                {r}
+                {t(`relations.${i}`)}
               </option>
             ))}
           </select>
         </div>
         <div className="form-group full">
-          <label>Address</label>
+          <label>{t("moiForm.address")}</label>
           <input value={state.address || ""} onChange={(e) => setState({ ...state, address: e.target.value })} />
         </div>
         <div className="form-group full">
-          <label>Note (optional)</label>
+          <label>{t("moiForm.note")}</label>
           <textarea rows={2} value={state.note || ""} onChange={(e) => setState({ ...state, note: e.target.value })} />
         </div>
       </div>
@@ -178,11 +182,11 @@ export default function MoiEntryForm({
             }}
           >
             <div>
-              <div className="section-title">Cash denomination (optional)</div>
-              <div className="text-xs text-muted">Enter qty of each note/coin — amount auto-fills.</div>
+              <div className="section-title">{t("moiForm.denomSection")}</div>
+              <div className="text-xs text-muted">{t("moiForm.denomHint")}</div>
             </div>
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowDenoms((v) => !v)}>
-              {showDenoms ? "Hide" : "Enter denominations"}
+              {showDenoms ? t("moiForm.hide") : t("moiForm.enterDenoms")}
             </button>
           </div>
           {showDenoms && (
@@ -203,12 +207,14 @@ export default function MoiEntryForm({
                 ))}
               </div>
               <div className="denom-total-bar">
-                <span>Denomination total</span>
+                <span>{t("moiForm.denomTotal")}</span>
                 <span>{fmt(denomSum)}</span>
               </div>
               {denomMismatch && (
                 <div style={{ color: "var(--danger)", fontSize: 12, marginTop: 6 }}>
-                  Denomination total {fmt(denomSum)} does not match amount {fmt(Number(state.amount))}.
+                  {t("moiForm.denomMismatch")
+                    .replace("{d}", fmt(denomSum))
+                    .replace("{a}", fmt(Number(state.amount)))}
                 </div>
               )}
             </>

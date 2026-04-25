@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import type { ReactNode } from "react";
 import { Toaster } from "sonner";
 import { useAuth } from "./context/useAuth";
+import { useLanguage } from "./context/useLanguage";
 import Spinner from "./components/ui/Spinner";
 import LoginPage from "./components/LoginPage";
 import AdminApp from "./pages/admin/AdminApp";
@@ -11,10 +12,15 @@ import SharedEventPage from "./pages/public/SharedEventPage";
 import NotFound from "./pages/NotFound";
 import type { Role } from "./types/domain";
 
+function AppLoading() {
+  const { t } = useLanguage();
+  return <Spinner label={t("common.loading")} />;
+}
+
 function RequireAuth({ role, children }: { role?: Role; children: ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
-  if (loading) return <Spinner label="Loading…" />;
+  if (loading) return <AppLoading />;
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
   if (role && user.role !== role) {
     return <Navigate to={defaultRouteForRole(user.role)} replace />;
@@ -31,7 +37,7 @@ function defaultRouteForRole(role?: Role) {
 
 function RootRedirect() {
   const { user, loading } = useAuth();
-  if (loading) return <Spinner label="Loading…" />;
+  if (loading) return <AppLoading />;
   if (!user) return <Navigate to="/login" replace />;
   return <Navigate to={defaultRouteForRole(user.role)} replace />;
 }

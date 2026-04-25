@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { toast } from "sonner";
 import { Users, CalendarDays, Gift, BadgeDollarSign } from "lucide-react";
 import { adminApi } from "../../api/client";
+import { useLanguage } from "../../context/useLanguage";
 import { fmt, fmtDate } from "../../utils/helpers";
 import Spinner from "../../components/ui/Spinner";
 import ErrorBanner from "../../components/ui/ErrorBanner";
 import Empty from "../../components/ui/Empty";
 
 export default function AdminDashboard() {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [stats, setStats] = useState(null);
@@ -16,7 +18,7 @@ export default function AdminDashboard() {
   const [events, setEvents] = useState([]);
   const [affiliates, setAffiliates] = useState([]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setErr("");
     try {
@@ -31,18 +33,19 @@ export default function AdminDashboard() {
       setEvents(ev);
       setAffiliates(aff);
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Failed to load dashboard");
-      toast.error(e instanceof Error ? e.message : "Failed to load dashboard");
+      const msg = e instanceof Error ? e.message : t("admin.loadDashboardFailed");
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
-  if (loading) return <Spinner label="Loading dashboard…" />;
+  if (loading) return <Spinner label={t("admin.loadingDashboard")} />;
 
   const totalMoi = stats?.totalMoi || 0;
   const avgPerEvent = stats?.events ? totalMoi / stats.events : 0;
@@ -58,28 +61,49 @@ export default function AdminDashboard() {
     <div>
       <div className="page-header">
         <div>
-          <div className="page-title">Dashboard Overview</div>
-          <div className="page-sub">Everything happening across Moi Tech.</div>
+          <div className="page-title">{t("admin.dashTitle")}</div>
+          <div className="page-sub">{t("admin.dashSubPlatform")}</div>
         </div>
       </div>
 
       <ErrorBanner message={err} onDismiss={() => setErr("")} />
 
       <div className="stats-grid">
-        <StatCard icon={Users} label="Total Affiliates" value={stats?.affiliates || 0} sub={`${stats?.activeAffiliates || 0} active`} />
-        <StatCard icon={CalendarDays} label="Total Events" value={stats?.events || 0} sub={`${stats?.activeEvents || 0} active`} />
-        <StatCard icon={Gift} label="Moi Entries" value={(stats?.moiEntries || 0).toLocaleString("en-IN")} />
-        <StatCard icon={BadgeDollarSign} label="Platform Revenue" value={fmt(stats?.totalRevenue || 0)} variant="success" />
+        <StatCard
+          icon={Users}
+          label={t("admin.statAffiliates")}
+          value={stats?.affiliates || 0}
+          sub={`${stats?.activeAffiliates || 0} ${t("common.activeCount")}`}
+        />
+        <StatCard
+          icon={CalendarDays}
+          label={t("admin.statEvents")}
+          value={stats?.events || 0}
+          sub={`${stats?.activeEvents || 0} ${t("common.activeCount")}`}
+        />
+        <StatCard
+          icon={Gift}
+          label={t("admin.statMoiEntries")}
+          value={(stats?.moiEntries || 0).toLocaleString("en-IN")}
+        />
+        <StatCard
+          icon={BadgeDollarSign}
+          label={t("admin.platformRevenue")}
+          value={fmt(stats?.totalRevenue || 0)}
+          variant="success"
+        />
       </div>
 
       <div className="grid-2">
         <div className="card">
           <div className="card-header">
-            <div className="card-title">Revenue by month</div>
-            <div className="text-xs text-muted">{series.length} months</div>
+            <div className="card-title">{t("admin.revenueByMonth")}</div>
+            <div className="text-xs text-muted">
+              {series.length} {t("common.months")}
+            </div>
           </div>
           {series.length === 0 ? (
-            <Empty title="No revenue data" description="Events and Moi entries will appear here." />
+            <Empty title={t("admin.noRevenueData")} description={t("admin.noRevenueDataDesc")} />
           ) : (
             <div style={{ display: "flex", alignItems: "flex-end", gap: 8, minHeight: 160 }}>
               {series.map((s) => (
@@ -101,9 +125,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className="card">
-          <div className="card-title">Top Affiliates</div>
+          <div className="card-title">{t("admin.topAffiliates")}</div>
           {topAffiliates.length === 0 ? (
-            <Empty title="No affiliates yet" />
+            <Empty title={t("admin.noAffiliatesYet")} />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {topAffiliates.map((a) => (
@@ -121,7 +145,7 @@ export default function AdminDashboard() {
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 13 }}>{a.user?.name || "—"}</div>
                     <div className="text-xs text-muted">
-                      {a._count?.events || 0} events · {a.plan}
+                      {a._count?.events || 0} {t("admin.affiliateEventsList")} · {a.plan}
                     </div>
                   </div>
                   <div className="amount-tag">{fmt(a.revenue || 0)}</div>
@@ -134,22 +158,22 @@ export default function AdminDashboard() {
 
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-header">
-          <div className="card-title">Recent Events</div>
-          <div className="text-xs text-muted">Showing latest 10</div>
+          <div className="card-title">{t("admin.recentEvents")}</div>
+          <div className="text-xs text-muted">{t("admin.recentEventsSub")}</div>
         </div>
         {events.length === 0 ? (
-          <Empty title="No events" description="Events created by affiliates will appear here." />
+          <Empty title={t("admin.noEventsAdmin")} description={t("admin.noEventsAdminDesc")} />
         ) : (
           <div className="table-wrap">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Event</th>
-                  <th>Type</th>
-                  <th>Date</th>
-                  <th>Affiliate</th>
-                  <th>Moi count</th>
-                  <th className="num">Status</th>
+                  <th>{t("admin.thEvent")}</th>
+                  <th>{t("admin.thType")}</th>
+                  <th>{t("admin.thDate")}</th>
+                  <th>{t("admin.thAffiliate")}</th>
+                  <th>{t("admin.moiCountShort")}</th>
+                  <th className="num">{t("common.status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -177,9 +201,9 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid-3" style={{ marginTop: 16 }}>
-        <SummaryTile label="Total Moi Collected" value={fmt(totalMoi)} />
-        <SummaryTile label="Avg. per Event" value={fmt(Math.round(avgPerEvent))} />
-        <SummaryTile label="Avg. per Entry" value={fmt(Math.round(avgPerEntry))} />
+        <SummaryTile label={t("admin.totalMoiCollected")} value={fmt(totalMoi)} />
+        <SummaryTile label={t("admin.avgPerEvent")} value={fmt(Math.round(avgPerEvent))} />
+        <SummaryTile label={t("admin.avgPerEntry")} value={fmt(Math.round(avgPerEntry))} />
       </div>
     </div>
   );

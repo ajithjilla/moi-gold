@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -28,17 +28,23 @@ import ErrorBanner from "../../components/ui/ErrorBanner";
 import Toggle from "../../components/ui/Toggle";
 import MoiEntryForm from "./components/MoiEntryForm";
 import WriterManager from "./components/WriterManager";
+import { useLanguage } from "../../context/useLanguage";
 import type { Settlement } from "../../types/domain";
 
-const TABS = [
-  { id: "entries", label: "Moi entries", icon: Gift },
-  { id: "writers", label: "Writers", icon: Users },
-  { id: "settlement", label: "Settlement", icon: Calculator },
-];
-
 export default function EventDetail() {
+  const { t } = useLanguage();
   const { eventId } = useParams();
   const navigate = useNavigate();
+
+  const TABS = useMemo(
+    () =>
+      [
+        { id: "entries" as const, label: t("eventDetail.moiTab"), icon: Gift },
+        { id: "writers" as const, label: t("eventDetail.writersTab"), icon: Users },
+        { id: "settlement" as const, label: t("eventDetail.settleTab"), icon: Calculator },
+      ] as { id: "entries" | "writers" | "settlement"; label: string; icon: ComponentType<{ size?: number }> }[],
+    [t]
+  );
 
   const [event, setEvent] = useState(null);
   const [entries, setEntries] = useState([]);
@@ -63,11 +69,11 @@ export default function EventDetail() {
       setEntries(m.entries || []);
       setErr("");
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setErr(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, t]);
   useEffect(() => {
     load();
   }, [load]);
@@ -101,11 +107,11 @@ export default function EventDetail() {
     setSaving(true);
     try {
       await moiApi.create(eventId, payload);
-      toast.success("Entry added");
+      toast.success(t("eventDetail.toastEntryAdded"));
       setAddOpen(false);
       load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
@@ -115,11 +121,11 @@ export default function EventDetail() {
     setSaving(true);
     try {
       await moiApi.update(eventId, editing.id, payload);
-      toast.success("Entry updated");
+      toast.success(t("eventDetail.toastEntryUpdated"));
       setEditing(null);
       load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
@@ -129,11 +135,11 @@ export default function EventDetail() {
     setSaving(true);
     try {
       await moiApi.void(eventId, voiding.id);
-      toast.success("Entry voided");
+      toast.success(t("eventDetail.toastEntryVoided"));
       setVoiding(null);
       load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
@@ -142,10 +148,10 @@ export default function EventDetail() {
   const restoreEntry = async (entry) => {
     try {
       await moiApi.restore(eventId, entry.id);
-      toast.success("Entry restored");
+      toast.success(t("eventDetail.toastEntryRestored"));
       load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     }
   };
 
@@ -153,11 +159,11 @@ export default function EventDetail() {
     setSaving(true);
     try {
       await moiApi.remove(eventId, deleting.id);
-      toast.success("Entry deleted");
+      toast.success(t("eventDetail.toastEntryDeleted"));
       setDeleting(null);
       load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
@@ -167,9 +173,9 @@ export default function EventDetail() {
     try {
       const res = await affiliateApi.toggleShare(eventId, enabled);
       setEvent((ev) => ({ ...ev, share_enabled: res.share_enabled, share_token: res.share_token }));
-      toast.success(enabled ? "Public sharing enabled" : "Public sharing disabled");
+      toast.success(enabled ? t("eventDetail.toastPublicOn") : t("eventDetail.toastPublicOff"));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     }
   };
 
@@ -177,9 +183,9 @@ export default function EventDetail() {
     try {
       const res = await affiliateApi.regenerateShare(eventId);
       setEvent((ev) => ({ ...ev, share_token: res.share_token }));
-      toast.success("Share link regenerated");
+      toast.success(t("eventDetail.toastShareRegen"));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     }
   };
 
@@ -187,9 +193,9 @@ export default function EventDetail() {
     try {
       await affiliateApi.toggleWriterAccess(eventId, enabled);
       setEvent((ev) => ({ ...ev, writer_access_enabled: enabled }));
-      toast.success(enabled ? "Writer access enabled" : "Writer access disabled");
+      toast.success(enabled ? t("eventDetail.toastWriterOn") : t("eventDetail.toastWriterOff"));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     }
   };
 
@@ -203,7 +209,7 @@ export default function EventDetail() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     }
   };
 
@@ -211,46 +217,47 @@ export default function EventDetail() {
     if (!event?.share_token) return;
     const url = `${window.location.origin}/share/${event.share_token}`;
     navigator.clipboard.writeText(url);
-    toast.success("Share link copied");
+    toast.success(t("eventDetail.shareCopied"));
   };
 
   const [sendingWa, setSendingWa] = useState<string | null>(null);
-  const sendWhatsApp = async (entryId: string, giverName: string) => {
+  const sendWhatsApp = async (entryId: string, _giverName: string) => {
     setSendingWa(entryId);
     try {
       const res = await moiApi.sendWhatsApp(eventId, entryId);
       toast.success(res.message);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to send WhatsApp message");
+      toast.error(e instanceof Error ? e.message : t("eventDetail.whatsappFailed"));
     } finally {
       setSendingWa(null);
     }
   };
 
   if (loading) return <Spinner />;
-  if (!event) return <ErrorBanner message={err || "Event not found"} />;
+  if (!event) return <ErrorBanner message={err || t("eventDetail.eventNotFound")} />;
 
   return (
     <div>
       <div className="page-header">
         <div>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate("/affiliate")}>
-            <ArrowLeft size={14} /> Back
+            <ArrowLeft size={14} /> {t("eventDetail.back")}
           </button>
           <div className="page-title" style={{ marginTop: 8 }}>{event.name}</div>
           <div className="page-sub">
-            {fmtDate(event.date)} · {event.venue || "—"} · Owner: {event.owner_name}
+            {fmtDate(event.date)} · {event.venue || "—"} ·{" "}
+            {t("eventDetail.ownerLabel").replace("{name}", event.owner_name)}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="btn btn-outline" onClick={exportCsv}>
-            <FileSpreadsheet size={14} /> Export CSV
+            <FileSpreadsheet size={14} /> {t("eventDetail.exportCsv")}
           </button>
           <button className="btn btn-outline" onClick={() => window.print()}>
-            <Printer size={14} /> Print
+            <Printer size={14} /> {t("eventDetail.print")}
           </button>
           <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
-            <Plus size={14} /> Add Moi
+            <Plus size={14} /> {t("eventDetail.addMoi")}
           </button>
         </div>
       </div>
@@ -259,15 +266,15 @@ export default function EventDetail() {
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-label">Total entries</div>
+          <div className="stat-label">{t("eventDetail.totalEntries")}</div>
           <div className="stat-value">{totals.count}</div>
         </div>
         <div className="stat-card success">
-          <div className="stat-label">Total Moi</div>
+          <div className="stat-label">{t("eventDetail.totalMoi")}</div>
           <div className="stat-value">{fmt(totals.total)}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Average / entry</div>
+          <div className="stat-label">{t("eventDetail.avgPerEntry")}</div>
           <div className="stat-value">{fmt(totals.avg)}</div>
         </div>
       </div>
@@ -275,8 +282,8 @@ export default function EventDetail() {
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-header">
           <div>
-            <div className="section-title">Access & Sharing</div>
-            <div className="text-xs text-muted">Control writer recording and the owner's public view.</div>
+            <div className="section-title">{t("eventDetail.accessSharing")}</div>
+            <div className="text-xs text-muted">{t("eventDetail.accessHelp")}</div>
           </div>
         </div>
         <div className="grid-2">
@@ -291,9 +298,9 @@ export default function EventDetail() {
             }}
           >
             <div>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>Writer recording</div>
+              <div style={{ fontWeight: 700, fontSize: 13 }}>{t("eventDetail.writerRecord")}</div>
               <div className="text-xs text-muted">
-                Writers {event.writer_access_enabled ? "can" : "cannot"} add entries right now.
+                {event.writer_access_enabled ? t("eventDetail.writerRecordOn") : t("eventDetail.writerRecordOff")}
               </div>
             </div>
             <Toggle checked={event.writer_access_enabled} onChange={toggleWriters} />
@@ -315,21 +322,21 @@ export default function EventDetail() {
               }}
             >
               <div>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>Owner public link</div>
-                <div className="text-xs text-muted">Share a view-only URL with the event owner.</div>
+                <div style={{ fontWeight: 700, fontSize: 13 }}>{t("eventDetail.publicLink")}</div>
+                <div className="text-xs text-muted">{t("eventDetail.publicLinkHelp")}</div>
               </div>
               <Toggle checked={event.share_enabled} onChange={toggleShare} />
             </div>
             {event.share_enabled && event.share_token && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <button className="btn btn-sm btn-outline" onClick={copyShareLink}>
-                  <Link2 size={12} /> Copy link
+                  <Link2 size={12} /> {t("eventDetail.copyLink")}
                 </button>
                 <button className="btn btn-sm btn-ghost" onClick={regenShare}>
-                  <RefreshCw size={12} /> Regenerate
+                  <RefreshCw size={12} /> {t("eventDetail.regenerate")}
                 </button>
                 <Link className="btn btn-sm btn-ghost" to={`/share/${event.share_token}`} target="_blank" rel="noreferrer">
-                  Open
+                  {t("eventDetail.open")}
                 </Link>
               </div>
             )}
@@ -372,33 +379,33 @@ export default function EventDetail() {
                   <Search size={16} />
                   <input
                     className="input"
-                    placeholder="Search by name, phone, relation…"
+                    placeholder={t("eventDetail.searchPlaceholder")}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                   />
                 </div>
                 <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13 }}>
                   <input type="checkbox" checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
-                  Show voided
+                  {t("eventDetail.showVoided")}
                 </label>
               </div>
 
               {visibleEntries.length === 0 ? (
-                <Empty title="No entries yet" description="Click ‘Add Moi’ to record the first entry." />
+                <Empty title={t("eventDetail.emptyNoEntries")} description={t("eventDetail.emptyNoEntriesDesc")} />
               ) : (
                 <div className="table-wrap">
                   <table className="data-table">
                     <thead>
                       <tr>
                         <th>#</th>
-                        <th>Giver</th>
-                        <th>Phone</th>
-                        <th>Relation</th>
-                        <th>Method</th>
-                        <th>Writer</th>
-                        <th>When</th>
-                        <th className="num">Amount</th>
-                        <th className="num">Actions</th>
+                        <th>{t("eventDetail.giver")}</th>
+                        <th>{t("eventDetail.phone")}</th>
+                        <th>{t("eventDetail.thRelation")}</th>
+                        <th>{t("affiliate.thMethod")}</th>
+                        <th>{t("eventDetail.thWriter")}</th>
+                        <th>{t("eventDetail.when")}</th>
+                        <th className="num">{t("affiliate.thAmount")}</th>
+                        <th className="num">{t("common.actions")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -424,16 +431,28 @@ export default function EventDetail() {
                             <div style={{ display: "inline-flex", gap: 4 }}>
                               {!e.voided && (
                                 <>
-                                  <button className="btn btn-sm btn-ghost" onClick={() => setEditing(e)} title="Edit">
+                                  <button
+                                    className="btn btn-sm btn-ghost"
+                                    onClick={() => setEditing(e)}
+                                    title={t("eventDetail.editTooltip")}
+                                  >
                                     <Edit2 size={12} />
                                   </button>
-                                  <button className="btn btn-sm btn-ghost" onClick={() => setVoiding(e)} title="Void">
+                                  <button
+                                    className="btn btn-sm btn-ghost"
+                                    onClick={() => setVoiding(e)}
+                                    title={t("eventDetail.voidTooltip")}
+                                  >
                                     <Ban size={12} />
                                   </button>
                                 </>
                               )}
                               {e.voided && (
-                                <button className="btn btn-sm btn-ghost" onClick={() => restoreEntry(e)} title="Restore">
+                                <button
+                                  className="btn btn-sm btn-ghost"
+                                  onClick={() => restoreEntry(e)}
+                                  title={t("eventDetail.restoreTooltip")}
+                                >
                                   <Undo2 size={12} />
                                 </button>
                               )}
@@ -442,7 +461,7 @@ export default function EventDetail() {
                                   className="btn btn-sm btn-ghost"
                                   onClick={() => sendWhatsApp(e.id, e.giver_name)}
                                   disabled={sendingWa === e.id}
-                                  title={`Send WhatsApp to ${e.giver_name}`}
+                                  title={t("eventDetail.sendWhatsapp").replace("{name}", e.giver_name)}
                                   style={{ color: "#25D366" }}
                                 >
                                   <MessageCircle size={12} />
@@ -451,7 +470,7 @@ export default function EventDetail() {
                               <button
                                 className="btn btn-sm btn-danger-outline"
                                 onClick={() => setDeleting(e)}
-                                title="Delete"
+                                title={t("eventDetail.deleteTooltip")}
                               >
                                 <Trash2 size={12} />
                               </button>
@@ -475,15 +494,15 @@ export default function EventDetail() {
       <Modal
         open={addOpen}
         onClose={() => !saving && setAddOpen(false)}
-        title="Add Moi entry"
+        title={t("eventDetail.addModalTitle")}
         wide
         footer={
           <>
             <button className="btn btn-ghost" onClick={() => setAddOpen(false)} disabled={saving}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button className="btn btn-primary" form="moi-form-add" type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Add entry"}
+              {saving ? t("eventDetail.saving") : t("eventDetail.addEntryBtn")}
             </button>
           </>
         }
@@ -494,15 +513,15 @@ export default function EventDetail() {
       <Modal
         open={!!editing}
         onClose={() => !saving && setEditing(null)}
-        title="Edit Moi entry"
+        title={t("eventDetail.editModalTitle")}
         wide
         footer={
           <>
             <button className="btn btn-ghost" onClick={() => setEditing(null)} disabled={saving}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button className="btn btn-primary" form="moi-form-edit" type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("eventDetail.saving") : t("eventDetail.saveEntry")}
             </button>
           </>
         }
@@ -515,9 +534,9 @@ export default function EventDetail() {
         onClose={() => !saving && setVoiding(null)}
         onConfirm={voidEntry}
         loading={saving}
-        title="Void this entry?"
-        message="It will be excluded from totals but kept for audit. You can restore it later."
-        confirmLabel="Void"
+        title={t("eventDetail.voidTitle")}
+        message={t("eventDetail.voidMsg")}
+        confirmLabel={t("eventDetail.voidButton")}
         destructive
       />
 
@@ -526,16 +545,17 @@ export default function EventDetail() {
         onClose={() => !saving && setDeleting(null)}
         onConfirm={hardDelete}
         loading={saving}
-        title="Delete permanently?"
-        message="This entry will be removed forever. Consider voiding instead if you may need to restore it."
-        confirmLabel="Delete"
+        title={t("eventDetail.deletePermanentTitle")}
+        message={t("eventDetail.deletePermanentMsg")}
+        confirmLabel={t("common.delete")}
         destructive
       />
     </div>
   );
 }
 
-function SettlementPanel({ eventId }) {
+function SettlementPanel({ eventId }: { eventId: string }) {
+  const { t } = useLanguage();
   const [data, setData] = useState<Settlement | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -544,43 +564,46 @@ function SettlementPanel({ eventId }) {
     reportsApi
       .settlement(eventId)
       .then(setData)
-      .catch((e) => setErr(e instanceof Error ? e.message : "Something went wrong"))
+      .catch((e) => setErr(e instanceof Error ? e.message : t("common.somethingWrong")))
       .finally(() => setLoading(false));
-  }, [eventId]);
+  }, [eventId, t]);
 
   if (loading) return <Spinner />;
   if (err) return <ErrorBanner message={err} />;
   if (!data) return null;
 
+  const subLine = t("settlement.subLine")
+    .replace("{total}", String(data.totalEntries))
+    .replace("{cash}", String(data.cashCount))
+    .replace("{digital}", String(data.digitalCount));
+
   return (
     <div>
       <div className="settle-hero">
-        <div className="settle-hero-label">Grand total</div>
+        <div className="settle-hero-label">{t("settlement.heroGrand")}</div>
         <div className="settle-hero-amount">{fmt(data.grandTotal)}</div>
-        <div className="settle-hero-sub">
-          {data.totalEntries} entries · {data.cashCount} cash · {data.digitalCount} digital
-        </div>
+        <div className="settle-hero-sub">{subLine}</div>
       </div>
 
       <div className="settlement-grid" style={{ marginTop: 16 }}>
         <div className="settlement-card">
-          <div className="settlement-card-label">Cash in hand</div>
+          <div className="settlement-card-label">{t("settlement.cashInHand")}</div>
           <div className="settlement-card-amount">{fmt(data.cashTotal)}</div>
-          <div className="settlement-card-sub">{data.cashCount} entries</div>
+          <div className="settlement-card-sub">{t("settlement.cardEntries").replace("{n}", String(data.cashCount))}</div>
         </div>
         <div className="settlement-card">
-          <div className="settlement-card-label">In account</div>
+          <div className="settlement-card-label">{t("settlement.inAccount")}</div>
           <div className="settlement-card-amount">{fmt(data.digitalTotal)}</div>
-          <div className="settlement-card-sub">{data.digitalCount} entries</div>
+          <div className="settlement-card-sub">{t("settlement.cardEntries").replace("{n}", String(data.digitalCount))}</div>
         </div>
       </div>
 
       <div className="grid-2" style={{ marginTop: 16 }}>
         <div>
-          <div className="section-strip">Method breakdown</div>
+          <div className="section-strip">{t("settlement.methodBreakdown")}</div>
           {Object.keys(data.methodBreakdown).length === 0 ? (
             <div className="empty-sub" style={{ padding: 12 }}>
-              No digital entries yet.
+              {t("settlement.noDigitalYet")}
             </div>
           ) : (
             <div style={{ display: "grid", gap: 8 }}>
@@ -606,10 +629,10 @@ function SettlementPanel({ eventId }) {
           )}
         </div>
         <div>
-          <div className="section-strip">Cash denominations</div>
+          <div className="section-strip">{t("settlement.denomSection")}</div>
           {Object.keys(data.denomBreakdown).length === 0 ? (
             <div className="empty-sub" style={{ padding: 12 }}>
-              No denomination info recorded.
+              {t("settlement.noDenomYet")}
             </div>
           ) : (
             <div className="denom-grid">
@@ -625,7 +648,7 @@ function SettlementPanel({ eventId }) {
             </div>
           )}
           <div className="denom-total-bar" style={{ marginTop: 10 }}>
-            <span>Cash total</span>
+            <span>{t("settlement.cashTotalBar")}</span>
             <span>{fmt(data.cashTotal)}</span>
           </div>
         </div>
