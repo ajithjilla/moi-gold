@@ -202,6 +202,8 @@ export const moiApi = {
     api.post<{ message: string; wa_message_id: string | null }>(
       `/api/events/${eventId}/moi/${entryId}/whatsapp`
     ),
+  history: (eventId: string, entryId: string) =>
+    api.get<AuditLog[]>(`/api/events/${eventId}/moi/${entryId}/history`),
 };
 
 // ─── Reports ───────────────────────────────────────────────

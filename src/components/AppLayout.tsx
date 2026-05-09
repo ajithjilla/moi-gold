@@ -36,7 +36,7 @@ export default function AppLayout({
       : user?.role === "AFFILIATE"
       ? t("nav.affiliate")
       : user?.role === "USER"
-      ? "Writer"
+      ? t("nav.writer")
       : t("nav.eventOwner");
 
   const handleLogout = async () => {

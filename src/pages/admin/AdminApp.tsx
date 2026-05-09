@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { LayoutDashboard, Users, CalendarDays, BadgeDollarSign, Package2, Settings, ScrollText } from "lucide-react";
+import { useLanguage } from "../../context/useLanguage";
 import AppLayout from "../../components/AppLayout";
 import AdminDashboard from "./AdminDashboard";
 import AdminAffiliates from "./AdminAffiliates";
@@ -9,19 +11,22 @@ import AdminPlans from "./AdminPlans";
 import AdminSettings from "./AdminSettings";
 import AdminAudit from "./AdminAudit";
 
-const MENU = [
-  { to: "/admin", label: "Overview", icon: LayoutDashboard, end: true },
-  { to: "/admin/affiliates", label: "Affiliates", icon: Users },
-  { to: "/admin/events", label: "All Events", icon: CalendarDays },
-  { to: "/admin/revenue", label: "Revenue", icon: BadgeDollarSign },
-  { to: "/admin/plans", label: "Plans", icon: Package2 },
-  { to: "/admin/audit", label: "Audit log", icon: ScrollText },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
-];
-
 export default function AdminApp() {
+  const { t } = useLanguage();
+  const menu = useMemo(
+    () => [
+      { to: "/admin", label: t("admin.menuOverview"), icon: LayoutDashboard, end: true },
+      { to: "/admin/affiliates", label: t("admin.menuAffiliates"), icon: Users },
+      { to: "/admin/events", label: t("admin.menuEvents"), icon: CalendarDays },
+      { to: "/admin/revenue", label: t("admin.menuRevenue"), icon: BadgeDollarSign },
+      { to: "/admin/plans", label: t("admin.menuPlans"), icon: Package2 },
+      { to: "/admin/audit", label: t("admin.menuAudit"), icon: ScrollText },
+      { to: "/admin/settings", label: t("admin.menuSettings"), icon: Settings },
+    ],
+    [t]
+  );
   return (
-    <AppLayout menu={MENU}>
+    <AppLayout menu={menu}>
       <Routes>
         <Route index element={<AdminDashboard />} />
         <Route path="affiliates" element={<AdminAffiliates />} />

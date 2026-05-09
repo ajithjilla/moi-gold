@@ -65,6 +65,18 @@ router.post(
       },
       include: { written_by: { select: { id: true, name: true, phone: true } } },
     });
+
+    await prisma.auditLog.create({
+      data: {
+        actor_id: req.user.id,
+        action: "CREATE",
+        entity: "MoiEntry",
+        entity_id: entry.id,
+        metadata: { new: entry },
+        ip: req.ip || req.connection.remoteAddress,
+      },
+    });
+
     res.status(201).json(entry);
   })
 );
@@ -90,6 +102,18 @@ router.patch(
       data: req.body,
       include: { written_by: { select: { id: true, name: true, phone: true } } },
     });
+
+    await prisma.auditLog.create({
+      data: {
+        actor_id: req.user.id,
+        action: "UPDATE",
+        entity: "MoiEntry",
+        entity_id: req.params.entryId,
+        metadata: { old: entry, new: updated },
+        ip: req.ip || req.connection.remoteAddress,
+      },
+    });
+
     res.json(updated);
   })
 );
@@ -107,6 +131,18 @@ router.patch(
       where: { id: req.params.entryId },
       data: { voided: true, voided_at: new Date(), voided_by_id: req.user.id },
     });
+
+    await prisma.auditLog.create({
+      data: {
+        actor_id: req.user.id,
+        action: "VOID",
+        entity: "MoiEntry",
+        entity_id: req.params.entryId,
+        metadata: { old: entry, new: updated },
+        ip: req.ip || req.connection.remoteAddress,
+      },
+    });
+
     res.json(updated);
   })
 );
@@ -116,10 +152,28 @@ router.patch(
   asyncHandler(async (req, res) => {
     const { access } = await getEventAccess(req.params.eventId, req.user);
     if (access !== "full") throw forbidden("Only event affiliates can restore entries");
+    
+    const entry = await prisma.moiEntry.findFirst({
+      where: { id: req.params.entryId, event_id: req.params.eventId },
+    });
+    if (!entry) throw notFound("Entry not found");
+
     const updated = await prisma.moiEntry.update({
       where: { id: req.params.entryId },
       data: { voided: false, voided_at: null, voided_by_id: null },
     });
+
+    await prisma.auditLog.create({
+      data: {
+        actor_id: req.user.id,
+        action: "RESTORE",
+        entity: "MoiEntry",
+        entity_id: req.params.entryId,
+        metadata: { old: entry, new: updated },
+        ip: req.ip || req.connection.remoteAddress,
+      },
+    });
+
     res.json(updated);
   })
 );
@@ -129,8 +183,47 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { access } = await getEventAccess(req.params.eventId, req.user);
     if (access !== "full") throw forbidden("Only event affiliates can permanently delete");
+    
+    const entry = await prisma.moiEntry.findFirst({
+      where: { id: req.params.entryId, event_id: req.params.eventId },
+    });
+    if (!entry) throw notFound("Entry not found");
+
     await prisma.moiEntry.delete({ where: { id: req.params.entryId } });
+
+    await prisma.auditLog.create({
+      data: {
+        actor_id: req.user.id,
+        action: "DELETE",
+        entity: "MoiEntry",
+        entity_id: req.params.entryId,
+        metadata: { old: entry },
+        ip: req.ip || req.connection.remoteAddress,
+      },
+    });
+
     res.json({ message: "Entry deleted" });
+  })
+);
+
+router.get(
+  "/:entryId/history",
+  asyncHandler(async (req, res) => {
+    const { access } = await getEventAccess(req.params.eventId, req.user);
+    if (!access) throw forbidden("Access denied");
+
+    const logs = await prisma.auditLog.findMany({
+      where: {
+        entity: "MoiEntry",
+        entity_id: req.params.entryId,
+      },
+      include: {
+        actor: { select: { id: true, name: true, role: true } },
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    res.json(logs);
   })
 );
 

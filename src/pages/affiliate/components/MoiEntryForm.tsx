@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
+import { ArrowLeft, Calculator, Check, AlertTriangle } from "lucide-react";
 import { DENOMS, PAYMENT_METHODS, denomTotal, emptyDenoms, fmt } from "../../../utils/helpers";
+import { useLanguage } from "../../../context/useLanguage";
 import type { Denoms, MoiEntry, MoiEntryPayload, PaymentMethod } from "../../../types/domain";
 
 const RELATIONS = ["Uncle", "Aunt", "Friend", "Colleague", "Neighbor", "Relative", "Brother", "Sister", "Other"];
@@ -37,8 +39,9 @@ export default function MoiEntryForm({
   value?: Partial<MoiEntryPayload | MoiEntry> | null;
   onSubmit: (_payload: MoiEntryPayload) => void | Promise<void>;
 }) {
+  const { t } = useLanguage();
   const [state, setState] = useState<MoiEntryFormState>(emptyVal);
-  const [showDenoms, setShowDenoms] = useState(false);
+  const [view, setView] = useState<"form" | "denom">("form");
 
   useEffect(() => {
     if (value) {
@@ -48,38 +51,50 @@ export default function MoiEntryForm({
         amount: Number(value.amount || 0),
         denoms: value.denoms ? { ...emptyDenoms(), ...value.denoms } : emptyDenoms(),
       });
-      setShowDenoms(!!value.denoms && value.method === "CASH");
     } else {
       setState(emptyVal);
     }
+    setView("form");
   }, [value]);
 
   const denomSum = useMemo(() => denomTotal(state.denoms), [state.denoms]);
-  const denomMismatch =
-    state.method === "CASH" && showDenoms && denomSum > 0 && denomSum !== Number(state.amount);
+  const requiresDenom = state.method === "CASH";
+  const denomEntered = denomSum > 0;
+  const denomMatched = denomEntered && denomSum === Number(state.amount);
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const amount = Number(state.amount);
     if (!state.giver_name.trim()) {
-      toast.error("Giver name is required");
+      toast.error(t("moiForm.giverRequired"));
+      setView("form");
       return;
     }
     if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error("Amount must be greater than 0");
+      toast.error(t("moiForm.amountInvalid"));
+      setView("form");
       return;
     }
-    const useDenoms = state.method === "CASH" && showDenoms && denomSum > 0;
-    if (useDenoms && denomSum !== amount) {
-      toast.error(`Denomination total (${fmt(denomSum)}) does not match amount (${fmt(amount)})`);
-      return;
+    if (requiresDenom) {
+      if (!denomEntered) {
+        toast.error(t("moiForm.denomRequired"));
+        setView("denom");
+        return;
+      }
+      if (!denomMatched) {
+        toast.error(
+          t("moiForm.denomMismatch").replace("{d}", fmt(denomSum)).replace("{a}", fmt(amount))
+        );
+        setView("denom");
+        return;
+      }
     }
-    const cleanedDenoms = useDenoms
-      ? Object.fromEntries(
-          Object.entries(state.denoms).filter(([, qty]) => Number(qty) > 0)
-        )
+
+    const cleanedDenoms = requiresDenom
+      ? Object.fromEntries(Object.entries(state.denoms).filter(([, qty]) => Number(qty) > 0))
       : null;
-    const payload = {
+
+    const payload: MoiEntryPayload = {
       giver_name: state.giver_name.trim(),
       amount,
       phone: state.phone?.trim() || null,
@@ -95,124 +110,203 @@ export default function MoiEntryForm({
   const setDenomQty = (d: number, qty: string | number) => {
     const n = Math.max(0, Number(qty) || 0);
     const next = { ...state.denoms, [String(d)]: n };
-    const total = denomTotal(next);
-    setState((s) => ({
-      ...s,
-      denoms: next,
-      amount: showDenoms ? total : s.amount,
-    }));
+    setState((s) => ({ ...s, denoms: next }));
   };
 
-  return (
-    <form id={id} onSubmit={submit}>
-      <div className="form-grid">
-        <div className="form-group full">
-          <label>Gift giver name</label>
-          <input
-            value={state.giver_name}
-            onChange={(e) => setState({ ...state, giver_name: e.target.value })}
-            required
-            autoFocus
-          />
-        </div>
-        <div className="form-group">
-          <label>Amount (₹)</label>
-          <input
-            type="number"
-            min="0"
-            value={state.amount}
-            onChange={(e) => setState({ ...state, amount: Number(e.target.value) })}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label>Payment method</label>
-          <select
-            value={state.method}
-            onChange={(e) => {
-              const method = e.target.value as PaymentMethod;
-              setState({ ...state, method });
-              if (method !== "CASH") setShowDenoms(false);
-            }}
-          >
-            {PAYMENT_METHODS.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Phone</label>
-          <input value={state.phone || ""} onChange={(e) => setState({ ...state, phone: e.target.value })} />
-        </div>
-        <div className="form-group">
-          <label>Relation</label>
-          <select value={state.relation || ""} onChange={(e) => setState({ ...state, relation: e.target.value })}>
-            <option value="">—</option>
-            {RELATIONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="form-group full">
-          <label>Address</label>
-          <input value={state.address || ""} onChange={(e) => setState({ ...state, address: e.target.value })} />
-        </div>
-        <div className="form-group full">
-          <label>Note (optional)</label>
-          <textarea rows={2} value={state.note || ""} onChange={(e) => setState({ ...state, note: e.target.value })} />
-        </div>
-      </div>
+  const handleMethodChange = (method: PaymentMethod) => {
+    setState((s) => ({
+      ...s,
+      method,
+      denoms: method === "CASH" ? s.denoms : emptyDenoms(),
+    }));
+    if (method !== "CASH") setView("form");
+  };
 
-      {state.method === "CASH" && (
-        <div className="denom-section">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 8,
-            }}
-          >
-            <div>
-              <div className="section-title">Cash denomination (optional)</div>
-              <div className="text-xs text-muted">Enter qty of each note/coin — amount auto-fills.</div>
+  const onConfirmDenom = () => {
+    if (!denomEntered) {
+      toast.error(t("moiForm.denomRequired"));
+      return;
+    }
+    setState((s) => ({ ...s, amount: denomSum }));
+    setView("form");
+  };
+
+  const denomStatusKey = !denomEntered
+    ? "moiForm.denomNotEntered"
+    : denomMatched
+      ? "moiForm.denomMatched"
+      : "moiForm.denomMismatchShort";
+
+  return (
+    <form id={id} onSubmit={submit} className="moi-form">
+      {view === "form" ? (
+        <div className="form-grid form-grid-compact">
+          <div className="form-group full">
+            <label>{t("moiForm.giverLabel")}</label>
+            <input
+              value={state.giver_name}
+              onChange={(e) => setState({ ...state, giver_name: e.target.value })}
+              required
+              autoFocus
+            />
+          </div>
+
+          <div className="form-group">
+            <label>{t("moiForm.paymentMethod")}</label>
+            <select
+              value={state.method}
+              onChange={(e) => handleMethodChange(e.target.value as PaymentMethod)}
+            >
+              {PAYMENT_METHODS.map((m, i) => (
+                <option key={m} value={m}>
+                  {t(`paymentMethods.${i}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>{t("moiForm.amountLabel")}</label>
+            <input
+              type="number"
+              min="0"
+              value={state.amount || ""}
+              onChange={(e) => setState({ ...state, amount: Number(e.target.value) })}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>{t("moiForm.phone")}</label>
+            <input
+              value={state.phone || ""}
+              onChange={(e) => setState({ ...state, phone: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>{t("moiForm.relation")}</label>
+            <select
+              value={state.relation || ""}
+              onChange={(e) => setState({ ...state, relation: e.target.value })}
+            >
+              <option value="">—</option>
+              {RELATIONS.map((r, i) => (
+                <option key={r} value={r}>
+                  {t(`relations.${i}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group full">
+            <label>{t("moiForm.address")}</label>
+            <input
+              value={state.address || ""}
+              onChange={(e) => setState({ ...state, address: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group full">
+            <label>{t("moiForm.note")}</label>
+            <input
+              value={state.note || ""}
+              onChange={(e) => setState({ ...state, note: e.target.value })}
+              placeholder={t("moiForm.notePlaceholder")}
+            />
+          </div>
+
+          {requiresDenom && (
+            <div className="form-group full">
+              <button
+                type="button"
+                className={`denom-trigger ${denomMatched ? "is-matched" : denomEntered ? "is-mismatch" : "is-required"}`}
+                onClick={() => setView("denom")}
+              >
+                <span className="denom-trigger-icon">
+                  {denomMatched ? <Check size={18} /> : denomEntered ? <AlertTriangle size={18} /> : <Calculator size={18} />}
+                </span>
+                <span className="denom-trigger-body">
+                  <span className="denom-trigger-title">
+                    {t("moiForm.denomSection")}
+                    <span className="denom-required">*</span>
+                  </span>
+                  <span className="denom-trigger-sub">
+                    {t(denomStatusKey)
+                      .replace("{d}", fmt(denomSum))
+                      .replace("{a}", fmt(Number(state.amount) || 0))}
+                  </span>
+                </span>
+                <span className="denom-trigger-cta">
+                  {denomEntered ? t("moiForm.editDenoms") : t("moiForm.enterDenoms")}
+                </span>
+              </button>
             </div>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowDenoms((v) => !v)}>
-              {showDenoms ? "Hide" : "Enter denominations"}
+          )}
+        </div>
+      ) : (
+        <div className="denom-view">
+          <div className="denom-view-header">
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              onClick={() => setView("form")}
+            >
+              <ArrowLeft size={14} /> {t("common.back")}
+            </button>
+            <div className="denom-view-title">{t("moiForm.denomSection")}</div>
+            <div className="denom-view-amount">
+              <span className="text-muted text-xs">{t("moiForm.amountLabel")}</span>
+              <strong>{fmt(Number(state.amount) || 0)}</strong>
+            </div>
+          </div>
+
+          <div className="denom-view-hint">{t("moiForm.denomHint")}</div>
+
+          <div className="denom-grid denom-grid-compact">
+            {DENOMS.map((d) => (
+              <div key={d} className="denom-row">
+                <span className="denom-label">₹{d}</span>
+                <input
+                  className="denom-qty"
+                  type="number"
+                  min="0"
+                  value={state.denoms[String(d)] || ""}
+                  onChange={(e) => setDenomQty(d, e.target.value)}
+                  placeholder="0"
+                />
+                <span className="denom-sub">{fmt(d * (state.denoms[String(d)] || 0))}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className={`denom-total-bar ${denomMatched ? "matched" : denomEntered ? "mismatch" : ""}`}>
+            <span>{t("moiForm.denomTotal")}</span>
+            <span>{fmt(denomSum)}</span>
+          </div>
+
+          {denomEntered && !denomMatched && (
+            <div className="denom-warn">
+              <AlertTriangle size={14} />
+              <span>
+                {t("moiForm.denomMismatch")
+                  .replace("{d}", fmt(denomSum))
+                  .replace("{a}", fmt(Number(state.amount) || 0))}
+              </span>
+              <span className="denom-warn-help">{t("moiForm.denomConfirmHelp")}</span>
+            </div>
+          )}
+
+          <div className="denom-view-actions">
+            <button
+              type="button"
+              className="btn btn-primary btn-block"
+              onClick={onConfirmDenom}
+              disabled={!denomEntered}
+            >
+              <Check size={16} /> {t("moiForm.confirmDenom")}
             </button>
           </div>
-          {showDenoms && (
-            <>
-              <div className="denom-grid">
-                {DENOMS.map((d) => (
-                  <div key={d} className="denom-row">
-                    <span className="denom-label">₹{d}</span>
-                    <input
-                      className="denom-qty"
-                      type="number"
-                      min="0"
-                      value={state.denoms[String(d)] || 0}
-                      onChange={(e) => setDenomQty(d, e.target.value)}
-                    />
-                    <span className="denom-sub">{fmt(d * (state.denoms[String(d)] || 0))}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="denom-total-bar">
-                <span>Denomination total</span>
-                <span>{fmt(denomSum)}</span>
-              </div>
-              {denomMismatch && (
-                <div style={{ color: "var(--danger)", fontSize: 12, marginTop: 6 }}>
-                  Denomination total {fmt(denomSum)} does not match amount {fmt(Number(state.amount))}.
-                </div>
-              )}
-            </>
-          )}
         </div>
       )}
     </form>

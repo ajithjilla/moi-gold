@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Gift, CalendarDays, Users, Trash2, Edit2, ArrowRight } from "lucide-react";
 import { affiliateApi } from "../../api/client";
-import { fmt, fmtDate, EVENT_TYPES, statusBadgeClass } from "../../utils/helpers";
+import { fmt, fmtDate, EVENT_TYPES, statusBadgeClass, eventTypeLabel } from "../../utils/helpers";
+import { useLanguage } from "../../context/useLanguage";
 import Modal from "../../components/ui/Modal";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import Spinner from "../../components/ui/Spinner";
@@ -22,6 +23,7 @@ const emptyForm = {
 };
 
 export default function AffiliateEvents() {
+  const { t } = useLanguage();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -32,20 +34,20 @@ export default function AffiliateEvents() {
   const [deleting, setDeleting] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       setEvents(await affiliateApi.events());
       setErr("");
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setErr(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const submitCreate = async (e) => {
     e.preventDefault();
@@ -55,12 +57,12 @@ export default function AffiliateEvents() {
         ...form,
         date: new Date(form.date).toISOString(),
       });
-      toast.success("Event created");
+      toast.success(t("affiliatePage.toastCreated"));
       setCreateOpen(false);
       setForm(emptyForm);
       load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
@@ -80,11 +82,11 @@ export default function AffiliateEvents() {
         owner_email: editing.owner_email || null,
         status: editing.status,
       });
-      toast.success("Event updated");
+      toast.success(t("affiliatePage.toastUpdated"));
       setEditing(null);
       load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
@@ -94,11 +96,11 @@ export default function AffiliateEvents() {
     setSaving(true);
     try {
       await affiliateApi.deleteEvent(deleting.id);
-      toast.success("Event deleted");
+      toast.success(t("affiliatePage.toastDeleted"));
       setDeleting(null);
       load();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : t("common.somethingWrong"));
     } finally {
       setSaving(false);
     }
@@ -113,11 +115,11 @@ export default function AffiliateEvents() {
     <div>
       <div className="page-header">
         <div>
-          <div className="page-title">My Events</div>
-          <div className="page-sub">Create and manage your events.</div>
+          <div className="page-title">{t("affiliate.myEventsTitle")}</div>
+          <div className="page-sub">{t("affiliatePage.pageSub")}</div>
         </div>
         <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-          <Plus size={16} /> New event
+          <Plus size={16} /> {t("affiliatePage.newEventBtn")}
         </button>
       </div>
 
@@ -129,29 +131,29 @@ export default function AffiliateEvents() {
             <CalendarDays size={18} />
           </div>
           <div className="stat-value">{events.length}</div>
-          <div className="stat-label">Total events</div>
+          <div className="stat-label">{t("affiliatePage.totalEvents")}</div>
         </div>
         <div className="stat-card">
           <div className="stat-icon">
             <Users size={18} />
           </div>
           <div className="stat-value">{totalEntries}</div>
-          <div className="stat-label">Total Moi entries</div>
+          <div className="stat-label">{t("affiliate.statTotalMoiEntries")}</div>
         </div>
         <div className="stat-card success">
           <div className="stat-icon">
             <Gift size={18} />
           </div>
           <div className="stat-value">{fmt(totalMoi)}</div>
-          <div className="stat-label">Collected so far</div>
+          <div className="stat-label">{t("affiliatePage.collectedSoFar")}</div>
         </div>
       </div>
 
       {events.length === 0 ? (
         <div className="card">
-          <Empty title="No events yet" description="Click ‘New event’ to create your first event.">
+          <Empty title={t("affiliatePage.noEventsTitle")} description={t("affiliatePage.noEventsDesc")}>
             <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-              <Plus size={16} /> Create event
+              <Plus size={16} /> {t("affiliatePage.createEventBtn")}
             </button>
           </Empty>
         </div>
@@ -170,22 +172,26 @@ export default function AffiliateEvents() {
               </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
                 <span className="event-badge">{ev.type}</span>
-                <span className="badge badge-neutral">{ev._count?.moi_entries || 0} entries</span>
-                <span className="badge badge-neutral">{ev._count?.writers || 0} writers</span>
+                <span className="badge badge-neutral">
+                  {ev._count?.moi_entries || 0} {t("affiliatePage.entries")}
+                </span>
+                <span className="badge badge-neutral">
+                  {ev._count?.writers || 0} {t("affiliatePage.writers")}
+                </span>
               </div>
               <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                Owner: <strong style={{ color: "var(--text)" }}>{ev.owner_name}</strong>{" "}
+                {t("affiliatePage.owner")}: <strong style={{ color: "var(--text)" }}>{ev.owner_name}</strong>{" "}
                 {ev.owner_phone && <span>· {ev.owner_phone}</span>}
               </div>
               <div className="modal-footer" style={{ marginTop: 16, paddingTop: 12 }}>
                 <button className="btn btn-sm btn-ghost" onClick={() => setEditing({ ...ev, date: ev.date.slice(0, 10) })}>
-                  <Edit2 size={14} /> Edit
+                  <Edit2 size={14} /> {t("common.edit")}
                 </button>
                 <button className="btn btn-sm btn-danger-outline" onClick={() => setDeleting(ev)}>
-                  <Trash2 size={14} /> Delete
+                  <Trash2 size={14} /> {t("common.delete")}
                 </button>
                 <Link to={`/affiliate/events/${ev.id}`} className="btn btn-sm btn-primary">
-                  Open <ArrowRight size={14} />
+                  {t("affiliatePage.open")} <ArrowRight size={14} />
                 </Link>
               </div>
             </div>
@@ -196,15 +202,15 @@ export default function AffiliateEvents() {
       <Modal
         open={createOpen}
         onClose={() => !saving && setCreateOpen(false)}
-        title="Create event"
+        title={t("affiliatePage.createModalTitle")}
         wide
         footer={
           <>
             <button className="btn btn-ghost" onClick={() => setCreateOpen(false)} disabled={saving}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button className="btn btn-primary" form="create-event-form" type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Create event"}
+              {saving ? t("common.saving") : t("affiliatePage.createEventBtn")}
             </button>
           </>
         }
@@ -215,15 +221,15 @@ export default function AffiliateEvents() {
       <Modal
         open={!!editing}
         onClose={() => !saving && setEditing(null)}
-        title="Edit event"
+        title={t("affiliatePage.editModalTitle")}
         wide
         footer={
           <>
             <button className="btn btn-ghost" onClick={() => setEditing(null)} disabled={saving}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button className="btn btn-primary" form="edit-event-form" type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Save changes"}
+              {saving ? t("common.saving") : t("affiliatePage.saveChanges")}
             </button>
           </>
         }
@@ -236,10 +242,10 @@ export default function AffiliateEvents() {
         onClose={() => !saving && setDeleting(null)}
         onConfirm={doDelete}
         loading={saving}
-        title="Delete event?"
+        title={t("affiliatePage.deleteTitle")}
         destructive
-        message={`This will permanently delete "${deleting?.name}" and all its Moi entries. This action cannot be undone.`}
-        confirmLabel="Delete event"
+        message={t("affiliatePage.deleteMsg").replace("{name}", deleting?.name || "")}
+        confirmLabel={t("affiliatePage.deleteConfirm")}
       />
     </div>
   );
@@ -258,35 +264,41 @@ function EventForm({
   onSubmit: (_e: FormEvent<HTMLFormElement>) => void;
   showStatus?: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <form id={id} onSubmit={onSubmit}>
-      <div className="section-strip">Event details</div>
+      <div className="section-strip">{t("affiliatePage.eventDetails")}</div>
       <div className="form-grid">
         <div className="form-group full">
-          <label>Event name</label>
+          <label>{t("affiliatePage.eventName")}</label>
           <input value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })} required />
         </div>
         <div className="form-group">
-          <label>Type</label>
+          <label>{t("affiliatePage.type")}</label>
           <select value={value.type} onChange={(e) => onChange({ ...value, type: e.target.value })}>
-            {EVENT_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.emoji} {t.value}
+            {EVENT_TYPES.map((et) => (
+              <option key={et.value} value={et.value}>
+                {eventTypeLabel(et.value, t)}
               </option>
             ))}
           </select>
         </div>
         <div className="form-group">
-          <label>Date</label>
-          <input type="date" value={value.date?.slice?.(0, 10) ?? value.date} onChange={(e) => onChange({ ...value, date: e.target.value })} required />
+          <label>{t("affiliatePage.date")}</label>
+          <input
+            type="date"
+            value={value.date?.slice?.(0, 10) ?? value.date}
+            onChange={(e) => onChange({ ...value, date: e.target.value })}
+            required
+          />
         </div>
         <div className="form-group full">
-          <label>Venue</label>
+          <label>{t("affiliatePage.venue")}</label>
           <input value={value.venue || ""} onChange={(e) => onChange({ ...value, venue: e.target.value })} />
         </div>
         {showStatus && (
           <div className="form-group">
-            <label>Status</label>
+            <label>{t("affiliatePage.status")}</label>
             <select value={value.status} onChange={(e) => onChange({ ...value, status: e.target.value })}>
               {["UPCOMING", "ACTIVE", "COMPLETED", "CANCELLED"].map((s) => (
                 <option key={s} value={s}>
@@ -298,20 +310,33 @@ function EventForm({
         )}
       </div>
 
-      <div className="section-strip" style={{ marginTop: 18 }}>Owner details</div>
+      <div className="section-strip" style={{ marginTop: 18 }}>
+        {t("affiliatePage.ownerDetails")}
+      </div>
       <div className="form-grid">
         <div className="form-group">
-          <label>Owner name</label>
-          <input value={value.owner_name} onChange={(e) => onChange({ ...value, owner_name: e.target.value })} required />
+          <label>{t("affiliatePage.ownerName")}</label>
+          <input
+            value={value.owner_name}
+            onChange={(e) => onChange({ ...value, owner_name: e.target.value })}
+            required
+          />
         </div>
         <div className="form-group">
-          <label>Owner phone</label>
-          <input value={value.owner_phone || ""} onChange={(e) => onChange({ ...value, owner_phone: e.target.value })} />
+          <label>{t("affiliatePage.ownerPhone")}</label>
+          <input
+            value={value.owner_phone || ""}
+            onChange={(e) => onChange({ ...value, owner_phone: e.target.value })}
+          />
         </div>
         <div className="form-group full">
-          <label>Owner email (optional)</label>
-          <input type="email" value={value.owner_email || ""} onChange={(e) => onChange({ ...value, owner_email: e.target.value })} />
-          <div className="form-hint">Used only for notifications, not for login.</div>
+          <label>{t("affiliatePage.ownerEmailOpt")}</label>
+          <input
+            type="email"
+            value={value.owner_email || ""}
+            onChange={(e) => onChange({ ...value, owner_email: e.target.value })}
+          />
+          <div className="form-hint">{t("affiliatePage.ownerEmailHint")}</div>
         </div>
       </div>
     </form>
