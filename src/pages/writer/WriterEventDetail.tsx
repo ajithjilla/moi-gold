@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Edit2, Search, MessageCircle } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Search, MessageCircle, History } from "lucide-react";
 import { writerApi, moiApi } from "../../api/client";
 import { fmt, fmtDate, fmtDateTime } from "../../utils/helpers";
 import Modal from "../../components/ui/Modal";
@@ -9,6 +9,7 @@ import Spinner from "../../components/ui/Spinner";
 import Empty from "../../components/ui/Empty";
 import ErrorBanner from "../../components/ui/ErrorBanner";
 import MoiEntryForm from "../affiliate/components/MoiEntryForm";
+import EntryHistory from "../affiliate/components/EntryHistory";
 import { useLanguage } from "../../context/useLanguage";
 
 export default function WriterEventDetail() {
@@ -25,6 +26,7 @@ export default function WriterEventDetail() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [historyEntry, setHistoryEntry] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -204,6 +206,13 @@ export default function WriterEventDetail() {
                         >
                           <Edit2 size={12} />
                         </button>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => setHistoryEntry(e)}
+                          title={t("eventDetail.historyTooltip") || "View History"}
+                        >
+                          <History size={12} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -250,6 +259,14 @@ export default function WriterEventDetail() {
         }
       >
         {editing && <MoiEntryForm id="writer-moi-edit" value={editing} onSubmit={update} />}
+      </Modal>
+
+      <Modal
+        open={!!historyEntry}
+        onClose={() => setHistoryEntry(null)}
+        title={t("eventDetail.historyModalTitle") || "Entry History"}
+      >
+        {historyEntry && <EntryHistory entry={historyEntry} eventId={eventId!} />}
       </Modal>
     </div>
   );

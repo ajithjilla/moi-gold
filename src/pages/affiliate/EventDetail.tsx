@@ -16,6 +16,7 @@ import {
   Trash2,
   Printer,
   FileSpreadsheet,
+  History,
 } from "lucide-react";
 import { affiliateApi, moiApi, reportsApi } from "../../api/client";
 import { fmt, fmtDate, fmtDateTime } from "../../utils/helpers";
@@ -28,6 +29,7 @@ import ErrorBanner from "../../components/ui/ErrorBanner";
 import Toggle from "../../components/ui/Toggle";
 import MoiEntryForm from "./components/MoiEntryForm";
 import WriterManager from "./components/WriterManager";
+import EntryHistory from "./components/EntryHistory";
 import { useLanguage } from "../../context/useLanguage";
 import type { Settlement } from "../../types/domain";
 
@@ -59,6 +61,7 @@ export default function EventDetail() {
   const [editing, setEditing] = useState(null);
   const [voiding, setVoiding] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [historyEntry, setHistoryEntry] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -467,15 +470,22 @@ export default function EventDetail() {
                                   <MessageCircle size={12} />
                                 </button>
                               )}
-                              <button
-                                className="btn btn-sm btn-danger-outline"
-                                onClick={() => setDeleting(e)}
-                                title={t("eventDetail.deleteTooltip")}
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            </div>
-                          </td>
+                                <button
+                                  className="btn btn-sm btn-ghost"
+                                  onClick={() => setHistoryEntry(e)}
+                                  title={t("eventDetail.historyTooltip") || "View History"}
+                                >
+                                  <History size={12} />
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-danger-outline"
+                                  onClick={() => setDeleting(e)}
+                                  title={t("eventDetail.deleteTooltip")}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </td>
                         </tr>
                       ))}
                     </tbody>
@@ -550,6 +560,14 @@ export default function EventDetail() {
         confirmLabel={t("common.delete")}
         destructive
       />
+
+      <Modal
+        open={!!historyEntry}
+        onClose={() => setHistoryEntry(null)}
+        title={t("eventDetail.historyModalTitle") || "Entry History"}
+      >
+        {historyEntry && <EntryHistory entry={historyEntry} eventId={eventId!} />}
+      </Modal>
     </div>
   );
 }
